@@ -44,24 +44,24 @@ Local LLM (via API / client)
 NumPy (for similarity calculations)
 
 Project Structure
+
 local-rag-pipeline/
-│
-├── app/
-│   ├── chunker.py
-│   ├── embedder.py
-│   ├── retriever.py
-│   ├── rag_answerer.py
-│   ├── llm_client.py
-│   └── config.py
-│
-├── data/
-│   └── extracted/
-│
-├── run_embeddings.py
-├── run_semantic_search.py
-├── run_rag_answer.py
-│
-└── README.md
+
+app/
+chunker.py
+embedder.py
+retriever.py
+rag_answerer.py
+llm_client.py
+config.py
+
+data/
+extracted/
+run_embeddings.py
+run_semantic_search.py
+run_rag_answer.py
+
+README.md
 Setup
 git clone https://github.com/your-username/local-rag-pipeline.git
 cd local-rag-pipeline
