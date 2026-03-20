@@ -1,14 +1,14 @@
 from app.config import CHAT_MODEL
-from app.embedder import Embedder
 from app.llm_client import LLMClient
 from app.retriever import Retriever
+from app.prompts import build_general_rag_prompt, build_specific_rag_prompt
 
 
 class RAGAnswerer:
-    def __init__(self):
-        self.embedder = Embedder()
-        self.retriever = Retriever()
-        self.llm = LLMClient()
+    def __init__(self, embedder, retriever=None, llm=None):
+        self.embedder = embedder
+        self.retriever = retriever if retriever is not None else Retriever()
+        self.llm = llm if llm is not None else LLMClient()
 
     def build_context(self, top_chunks: list[dict]) -> str:
         context_parts = []
@@ -20,12 +20,57 @@ class RAGAnswerer:
 
         return "\n".join(context_parts)
 
+    def is_general_question(self, question: str) -> bool:
+        question_lower = question.strip().lower()
+
+        general_patterns = [
+            "о чем",
+            "что это за документ",
+            "что это за договор",
+            "кратко опиши",
+            "кратко описать",
+            "опиши документ",
+            "опиши договор",
+            "в чем суть",
+            "какие главные тезисы",
+            "основные тезисы",
+            "краткое резюме",
+            "сделай резюме",
+        ]
+
+        return any(pattern in question_lower for pattern in general_patterns)
+
+    def build_general_prompt(
+            self,
+            question: str,
+            context: str,
+            response_mode: str = "detailed",
+    ) -> str:
+        return build_general_rag_prompt(
+            question=question,
+            context=context,
+            response_mode=response_mode,
+        )
+
+    def build_specific_prompt(
+            self,
+            question: str,
+            context: str,
+            response_mode: str = "detailed",
+    ) -> str:
+        return build_specific_rag_prompt(
+            question=question,
+            context=context,
+            response_mode=response_mode,
+        )
+
     def answer_question(
-        self,
-        question: str,
-        chunks: list[str],
-        chunk_embeddings: list[list[float]],
-        top_k: int = 3,
+            self,
+            question: str,
+            chunks: list[str],
+            chunk_embeddings,
+            top_k: int = 3,
+            response_mode: str = "detailed",
     ) -> dict:
         query_embedding = self.embedder.embed_text(question)
 
@@ -36,28 +81,29 @@ class RAGAnswerer:
             top_k=top_k,
         )
 
+        if not top_chunks:
+            return {
+                "answer": "В предоставленных фрагментах нет данных для ответа.",
+                "top_chunks": [],
+            }
+
+        best_score = top_chunks[0]["score"]
+        if best_score < 0.45:
+            return {
+                "answer": (
+                    "В предоставленных фрагментах нет достаточно релевантных данных "
+                    "для уверенного ответа. Попробуйте задать более конкретный вопрос."
+                ),
+                "top_chunks": top_chunks,
+            }
+
         context = self.build_context(top_chunks)
 
-        prompt = f"""
-        Ты анализируешь русский деловой документ.
+        if self.is_general_question(question):
+            prompt = self.build_general_prompt(question, context, response_mode=response_mode)
+        else:
+            prompt = self.build_specific_prompt(question, context, response_mode=response_mode)
 
-        Ответь на вопрос пользователя, опираясь только на предоставленные фрагменты документа.
-        Не выдумывай факты и не добавляй ничего от себя.
-        Если точного ответа нет, так и напиши.
-
-        Сначала дай краткий ответ в 2–4 предложениях.
-        Потом, если возможно, укажи, в каких фрагментах это подтверждается.
-
-        Вопрос:
-        {question}
-
-        Фрагменты документа:
-        {context}
-
-        Формат ответа:
-        1. Краткий ответ
-        2. Подтверждение по фрагментам
-        """
         answer = self.llm.ask(prompt=prompt, model=CHAT_MODEL)
 
         return {

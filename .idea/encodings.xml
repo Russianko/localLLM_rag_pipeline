@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/api/main.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/api/schemas.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/assistants/base.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/assistants/factory.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/pipeline_service.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/storage.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/vault_manager.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/chunker.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/config.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/embedder.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/note_writer.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/pdf_reader.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/prompts.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/rag_answer.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/retriever.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/summarizer.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/app/text_cleaner.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_chunking.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_embeddings.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_note_generation.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_pdf_extract.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_rag_answer.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_semantic_search.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/local_brain/run_summary.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/run_obsidian_setup.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/run_pipeline.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/run_save_to_vault.py" charset="UTF-8" />
+  </component>
+</project>
