@@ -1,22 +1,26 @@
 from pathlib import Path
-
+from app.repositories import ProcessedDocumentRepository
 from app.config import build_pdf_path
 from app.storage import DocumentStorage
 from app.vault_manager import VaultManager
+from app.errors import DocumentNotFoundError, DocumentNotProcessedError
+
 
 
 class RAGQueryPipeline:
     def __init__(
-        self,
-        storage: DocumentStorage,
-        vault: VaultManager,
-        rag_provider,
-        process_document_callback,
+            self,
+            storage: DocumentStorage,
+            vault: VaultManager,
+            rag_provider,
+            process_document_callback,
+            repository: ProcessedDocumentRepository,
     ):
         self.storage = storage
         self.vault = vault
         self.rag_provider = rag_provider
         self.process_document_callback = process_document_callback
+        self.repository = repository
 
     def answer(
             self,
@@ -31,14 +35,15 @@ class RAGQueryPipeline:
         pdf_path = build_pdf_path(filename)
 
         if not pdf_path.exists():
-            raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+            raise DocumentNotFoundError(f"PDF file not found: {pdf_path}")
 
-        if self.storage.has_processed_data(filename):
-            chunks = self.storage.load_chunks(filename)
-            chunk_embeddings = self.storage.load_embeddings(filename)
+        if self.repository.exists(filename):
+            processed_doc = self.repository.load(filename)
+            chunks = processed_doc.chunks
+            chunk_embeddings = processed_doc.embeddings
         else:
             if not auto_process:
-                raise ValueError(
+                raise DocumentNotProcessedError(
                     "Документ ещё не обработан. Сначала вызови /process или включи auto_process."
                 )
 
@@ -48,11 +53,14 @@ class RAGQueryPipeline:
                 overlap=overlap,
             )
 
-            chunks = self.storage.load_chunks(filename)
-            chunk_embeddings = self.storage.load_embeddings(filename)
+            processed_doc = self.repository.load(filename)
+            chunks = processed_doc.chunks
+            chunk_embeddings = processed_doc.embeddings
 
             if not chunks:
-                raise ValueError("После обработки не удалось загрузить чанки документа.")
+                raise DocumentNotProcessedError(
+                    "После обработки не удалось загрузить чанки документа."
+                )
 
         rag = self.rag_provider()
         result = rag.answer_question(

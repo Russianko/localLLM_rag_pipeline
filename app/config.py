@@ -4,7 +4,7 @@ import os
 
 
 # === ASSISTANT CONFIG ===
-ASSISTANT_TYPE = os.getenv("ASSISTANT_TYPE", "dummy")
+ASSISTANT_TYPE = os.getenv("ASSISTANT_TYPE", "rag")
 
 
 # === LLM CONFIG ===
@@ -28,6 +28,14 @@ EXTRACTED_DIR = DATA_DIR / "extracted"
 OBSIDIAN_VAULT_DIR = LOCAL_BRAIN_DIR / "obsidian_vault"
 
 
+DEV_FAST_MODE = True
+
+DEFAULT_SUMMARY_LIMIT = 2000 if DEV_FAST_MODE else 4000
+DEFAULT_CHUNK_SIZE = 400 if DEV_FAST_MODE else 500
+DEFAULT_OVERLAP = 80 if DEV_FAST_MODE else 100
+DEFAULT_TOP_K = 2 if DEV_FAST_MODE else 3
+DEFAULT_RESPONSE_MODE = "short" if DEV_FAST_MODE else "detailed"
+
 # === BUILDERS ===
 
 def build_pdf_path(filename: str) -> Path:
@@ -46,3 +54,11 @@ def build_clean_text_path(filename: str) -> Path:
 
 def build_note_title(filename: str) -> str:
     return Path(filename).stem
+
+def get_default_pipeline_params():
+    return {
+        "summary_limit": DEFAULT_SUMMARY_LIMIT,
+        "chunk_size": DEFAULT_CHUNK_SIZE,
+        "overlap": DEFAULT_OVERLAP,
+        "top_k": DEFAULT_TOP_K,
+    }

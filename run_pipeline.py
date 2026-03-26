@@ -1,8 +1,16 @@
 import argparse
 from pprint import pprint
+from app.config import get_default_pipeline_params
 
 from app.pipeline_service import PipelineService
 
+
+defaults = get_default_pipeline_params()
+
+parser.add_argument("--summary-limit", default=defaults["summary_limit"])
+parser.add_argument("--chunk-size", default=defaults["chunk_size"])
+parser.add_argument("--overlap", default=defaults["overlap"])
+parser.add_argument("--top-k", default=defaults["top_k"])
 
 def parse_args():
     parser = argparse.ArgumentParser(

@@ -1,5 +1,5 @@
 from pathlib import Path
-
+from app.errors import DocumentNotFoundError, InvalidRequestError
 from app.chunker import TextChunker
 from app.config import build_note_title, build_pdf_path, build_raw_text_path
 from app.pdf_reader import PDFReader
@@ -26,72 +26,57 @@ class DocumentPipeline:
         self.storage = storage
         self.embedder_provider = embedder_provider
 
-    def process(
-        self,
-        filename: str,
-        summary_limit: int = 4000,
-        chunk_size: int = 500,
-        overlap: int = 100,
-        force_rebuild: bool = False,
-    ) -> dict:
-        pdf_path = build_pdf_path(filename)
-        raw_output_path = build_raw_text_path(filename)
+    def process(self, filename: str, summary_limit: int = 4000, chunk_size: int = 500, overlap: int = 100):
+        try:
+            # === 1. путь к PDF ===
+            pdf_path = self.storage.get_pdf_path(filename)
 
-        if not pdf_path.exists():
-            raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+            if not pdf_path.exists():
+                raise DocumentNotFoundError(f"PDF file not found: {pdf_path}")
 
-        raw_output_path.parent.mkdir(parents=True, exist_ok=True)
+            # === 2. extract ===
+            raw_text = self.pdf_reader.read(pdf_path)
 
-        raw_text = self.reader.extract_text(pdf_path)
-        if not raw_text or not raw_text.strip():
-            raise ValueError("Не удалось извлечь текст из PDF или текст пустой.")
+            if not raw_text or not raw_text.strip():
+                raise InvalidRequestError("Не удалось извлечь текст из PDF.")
 
-        raw_output_path.write_text(raw_text, encoding="utf-8")
+            # === 3. clean ===
+            clean_text = self.cleaner.clean(raw_text)
 
-        clean_text = self.cleaner.clean(raw_text)
-        if not clean_text or not clean_text.strip():
-            raise ValueError("После очистки текст документа оказался пустым.")
+            if not clean_text or not clean_text.strip():
+                raise InvalidRequestError("После очистки текст пустой.")
 
-        clean_text_path = self.storage.save_clean_text(filename, clean_text)
+            # === 4. chunk ===
+            chunks = self.chunker.chunk(clean_text, chunk_size=chunk_size, overlap=overlap)
 
-        summary_data = self._build_summary(clean_text, summary_limit)
-        summary_path = self.storage.save_summary(
-            filename=filename,
-            summary=summary_data["summary"],
-            key_points=summary_data["key_points"],
-            action_items=summary_data["action_items"],
-        )
+            if not chunks:
+                raise InvalidRequestError("Не удалось создать чанки.")
 
-        document_note_path = self.vault.save_document_note(
-            title=build_note_title(filename),
-            source=filename,
-            summary=summary_data["summary"],
-            key_points=summary_data["key_points"],
-            action_items=summary_data["action_items"],
-        )
+            # === 5. embeddings ===
+            embeddings = self.embedder.embed(chunks)
 
-        vector_data = self._build_vectors(
-            filename=filename,
-            clean_text=clean_text,
-            chunk_size=chunk_size,
-            overlap=overlap,
-            force_rebuild=force_rebuild,
-        )
+            # === 6. summary ===
+            summary = self.summarizer.summarize(clean_text[:summary_limit])
 
-        return {
-            "status": "processed",
-            "source_document": filename,
-            "summary": summary_data["summary"],
-            "key_points": summary_data["key_points"],
-            "action_items": summary_data["action_items"],
-            "document_note_path": str(Path(document_note_path).resolve()),
-            "raw_text_path": str(raw_output_path.resolve()),
-            "clean_text_path": clean_text_path,
-            "summary_path": summary_path,
-            "chunks_path": str(Path(vector_data["chunks_path"]).resolve()),
-            "embeddings_path": str(Path(vector_data["embeddings_path"]).resolve()),
-            "chunks_count": vector_data["chunks_count"],
-        }
+            # === 7. сохранить ===
+            self.storage.save_chunks(filename, chunks)
+            self.storage.save_embeddings(filename, embeddings)
+            self.storage.save_summary(filename, summary)
+
+            # ✅ УСПЕХ → удалить старую ошибку (если была)
+            self.storage.delete_error(filename)
+
+            return {
+                "status": "processed",
+                "chunks_count": len(chunks),
+            }
+
+        except Exception as e:
+            # ❌ ОШИБКА → сохранить её
+            self.storage.save_error(filename, str(e))
+            raise
+
+
 
     def _build_summary(self, clean_text: str, summary_limit: int) -> dict:
         summary_input = clean_text[:summary_limit]
@@ -132,7 +117,7 @@ class DocumentPipeline:
             chunks = chunker.chunk_text(clean_text)
 
             if not chunks:
-                raise ValueError("Не удалось сформировать чанки из документа.")
+                raise InvalidRequestError("Не удалось создать чанки.")
 
             embedder = self.embedder_provider()
             chunk_embeddings = embedder.embed_chunks(chunks)

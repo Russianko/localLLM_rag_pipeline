@@ -5,6 +5,12 @@ from app.config import (
     EMBEDDING_MODEL,
     DATA_DIR,
     OBSIDIAN_VAULT_DIR,
+    DEV_FAST_MODE,
+    DEFAULT_SUMMARY_LIMIT,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_OVERLAP,
+    DEFAULT_TOP_K,
+    DEFAULT_RESPONSE_MODE,
 )
 from app.embedder import Embedder
 from app.pdf_reader import PDFReader
@@ -15,6 +21,10 @@ from app.storage import DocumentStorage
 from app.summarizer import Summarizer
 from app.text_cleaner import TextCleaner
 from app.vault_manager import VaultManager
+from app.repositories import ProcessedDocumentRepository
+from app.llm_client import LLMClient
+
+from pathlib import Path
 
 
 class RAGDocumentAssistant(BaseAssistant):
@@ -28,6 +38,7 @@ class RAGDocumentAssistant(BaseAssistant):
 
         self.vault = VaultManager(OBSIDIAN_VAULT_DIR)
         self.storage = DocumentStorage(DATA_DIR / "processed")
+        self.repository = ProcessedDocumentRepository(self.storage)
 
         self.document_pipeline = DocumentPipeline(
             reader=self.reader,
@@ -36,6 +47,7 @@ class RAGDocumentAssistant(BaseAssistant):
             vault=self.vault,
             storage=self.storage,
             embedder_provider=self._get_embedder,
+            repository=self.repository,
         )
 
         self.query_pipeline = RAGQueryPipeline(
@@ -43,6 +55,7 @@ class RAGDocumentAssistant(BaseAssistant):
             vault=self.vault,
             rag_provider=self._get_rag,
             process_document_callback=self.process_document,
+            repository=self.repository,
         )
 
     def _get_embedder(self) -> Embedder:
@@ -56,25 +69,66 @@ class RAGDocumentAssistant(BaseAssistant):
         return self.rag
 
     def health(self) -> dict:
+        processed_dir = DATA_DIR / "processed"
+        vault_dir = OBSIDIAN_VAULT_DIR
+
+        processed_documents_count = 0
+        if processed_dir.exists() and processed_dir.is_dir():
+            processed_documents_count = len(
+                [p for p in processed_dir.iterdir() if p.is_dir()]
+            )
+
+        llm_reachable = False
+        llm_error = None
+
+        try:
+            client = LLMClient()
+            client.get_models()
+            llm_reachable = True
+        except Exception as e:
+            llm_error = str(e)
+
+        status = "ok" if llm_reachable else "degraded"
+
         return {
-            "status": "ok",
+            "status": status,
+            "service": "local-rag-assistant",
+            "assistant_type": "rag",
+            "dev_fast_mode": DEV_FAST_MODE,
             "base_url": BASE_URL,
             "chat_model": CHAT_MODEL,
             "embedding_model": EMBEDDING_MODEL,
-            "vault_dir": str(OBSIDIAN_VAULT_DIR.resolve()),
-            "processed_data_dir": str((DATA_DIR / "processed").resolve()),
-            "assistant_type": "rag",
-            "embedder_loaded": self.embedder is not None,
-            "rag_loaded": self.rag is not None,
+            "defaults": {
+                "summary_limit": DEFAULT_SUMMARY_LIMIT,
+                "chunk_size": DEFAULT_CHUNK_SIZE,
+                "overlap": DEFAULT_OVERLAP,
+                "top_k": DEFAULT_TOP_K,
+                "response_mode": DEFAULT_RESPONSE_MODE,
+            },
+            "storage": {
+                "vault_dir": str(vault_dir.resolve()),
+                "vault_dir_exists": vault_dir.exists(),
+                "processed_data_dir": str(processed_dir.resolve()),
+                "processed_data_dir_exists": processed_dir.exists(),
+                "processed_documents_count": processed_documents_count,
+            },
+            "runtime": {
+                "embedder_loaded": self.embedder is not None,
+                "rag_loaded": self.rag is not None,
+            },
+            "llm_connection": {
+                "reachable": llm_reachable,
+                "error": llm_error,
+            },
         }
 
     def process_document(
-        self,
-        filename: str,
-        summary_limit: int = 4000,
-        chunk_size: int = 500,
-        overlap: int = 100,
-        force_rebuild: bool = False,
+            self,
+            filename: str,
+            summary_limit: int,
+            chunk_size: int,
+            overlap: int,
+            force_rebuild: bool = False,
     ) -> dict:
         return self.document_pipeline.process(
             filename=filename,
@@ -88,9 +142,9 @@ class RAGDocumentAssistant(BaseAssistant):
             self,
             filename: str,
             question: str,
-            top_k: int = 3,
-            chunk_size: int = 500,
-            overlap: int = 100,
+            top_k: int,
+            chunk_size: int,
+            overlap: int,
             auto_process: bool = True,
             response_mode: str = "detailed",
     ) -> dict:
@@ -102,4 +156,4 @@ class RAGDocumentAssistant(BaseAssistant):
             overlap=overlap,
             auto_process=auto_process,
             response_mode=response_mode,
-        )
+        )   

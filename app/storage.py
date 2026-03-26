@@ -18,10 +18,6 @@ class DocumentStorage:
         shutil.rmtree(doc_dir)
         return True
 
-    def __init__(self, base_dir: Path):
-        self.base_dir = Path(base_dir)
-        self.base_dir.mkdir(parents=True, exist_ok=True)
-
     def get_doc_dir(self, filename: str) -> Path:
         doc_name = Path(filename).stem
         return self.base_dir / doc_name
@@ -108,6 +104,33 @@ class DocumentStorage:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
         return str(path.resolve())
+
+    def save_error(self, doc_id: str, error_message: str) -> str:
+        error_path = self.get_error_path(doc_id)
+        error_path.parent.mkdir(parents=True, exist_ok=True)
+
+        payload = {
+            "error": error_message,
+        }
+
+        error_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return str(error_path.resolve())
+
+    def get_error_path(self, doc_id: str) -> Path:
+        doc_name = Path(doc_id).stem
+        return self.base_dir / doc_name / "error.json"
+
+    def load_error(self, doc_id: str) -> dict:
+        error_path = self.get_error_path(doc_id)
+        return json.loads(error_path.read_text(encoding="utf-8"))
+
+    def delete_error(self, doc_id: str) -> None:
+        error_path = self.get_error_path(doc_id)
+        if error_path.exists():
+            error_path.unlink()
 
     def load_summary(self, filename: str) -> dict:
         path = self.get_summary_path(filename)
