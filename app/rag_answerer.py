@@ -110,3 +110,28 @@ class RAGAnswerer:
             "answer": answer,
             "top_chunks": top_chunks,
         }
+
+    def answer_from_top_chunks(
+            self,
+            question: str,
+            top_chunks: list[dict],
+    ) -> dict:
+        if not top_chunks:
+            return {
+                "answer": "В предоставленных фрагментах нет данных для ответа.",
+                "top_chunks": [],
+            }
+
+        context = "\n\n".join(item["chunk"] for item in top_chunks)
+
+        if self.is_general_question(question):
+            prompt = self.build_general_prompt(question, context)
+        else:
+            prompt = self.build_specific_prompt(question, context)
+
+        answer = self.llm.ask(prompt, model=self.chat_model)
+
+        return {
+            "answer": answer,
+            "top_chunks": top_chunks,
+        }

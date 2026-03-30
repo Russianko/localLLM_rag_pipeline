@@ -13,6 +13,7 @@ CHAT_MODEL = "qwen2.5-vl-3b-instruct"
 EMBEDDING_MODEL = "text-embedding-nomic-embed-text-v1.5"
 BASE_URL = "http://localhost:1234/v1"
 API_KEY = "lm-studio"
+RAG_SCORE_THRESHOLD = 0.02
 
 
 # === PATHS ===
@@ -62,3 +63,9 @@ def get_default_pipeline_params():
         "overlap": DEFAULT_OVERLAP,
         "top_k": DEFAULT_TOP_K,
     }
+
+# === VECTOR STORE ===
+
+VECTOR_DB_TYPE = os.getenv("VECTOR_DB_TYPE", "chroma")
+CHROMA_DIR = DATA_DIR / "chroma"
+CHROMA_COLLECTION = "documents"

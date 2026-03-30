@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from app.storage import DocumentStorage
+from app.domain import DocumentStatus
 
 
 @dataclass
@@ -27,10 +28,17 @@ class ProcessedDocumentRepository:
     def __init__(self, storage: DocumentStorage):
         self.storage = storage
 
+    @staticmethod
+    def _normalize_doc_id(doc_id: str) -> str:
+        return Path(doc_id).stem
+
     def exists(self, doc_id: str) -> bool:
+        doc_id = self._normalize_doc_id(doc_id)
         return self.storage.has_processed_data(doc_id)
 
     def load(self, doc_id: str) -> ProcessedDocument:
+        doc_id = self._normalize_doc_id(doc_id)
+
         summary = None
         key_points: list[str] = []
         action_items: list[str] = []
@@ -77,6 +85,8 @@ class ProcessedDocumentRepository:
         chunks: list[str],
         embeddings: list[Any],
     ) -> ProcessedDocument:
+        doc_id = self._normalize_doc_id(doc_id)
+
         self.storage.save_clean_text(doc_id, clean_text)
         self.storage.save_summary(
             filename=doc_id,
@@ -90,6 +100,8 @@ class ProcessedDocumentRepository:
         return self.load(doc_id)
 
     def get_status(self, doc_id: str) -> dict:
+        doc_id = self._normalize_doc_id(doc_id)
+
         summary_path = self.storage.get_summary_path(doc_id)
         chunks_path = self.storage.get_chunks_path(doc_id)
         embeddings_path = self.storage.get_embeddings_path(doc_id)
@@ -123,6 +135,7 @@ class ProcessedDocumentRepository:
         }
 
     def delete(self, doc_id: str) -> bool:
+        doc_id = self._normalize_doc_id(doc_id)
         return self.storage.delete_document(doc_id)
 
     def list_statuses(self) -> list[dict]:

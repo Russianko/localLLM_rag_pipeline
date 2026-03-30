@@ -90,7 +90,7 @@ class PipelineService:
         }
 
     def delete_document(self, doc_id: str) -> dict:
-        deleted = self.storage.delete_document(doc_id)
+        deleted = self.assistant.delete_document(doc_id)
 
         if not deleted:
             raise DocumentNotFoundError(f"Document not found: {doc_id}")

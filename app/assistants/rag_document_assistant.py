@@ -23,7 +23,8 @@ from app.text_cleaner import TextCleaner
 from app.vault_manager import VaultManager
 from app.repositories import ProcessedDocumentRepository
 from app.llm_client import LLMClient
-
+from app.config import CHROMA_COLLECTION, CHROMA_DIR
+from app.vectorstore import ChromaStore
 from pathlib import Path
 
 
@@ -39,7 +40,11 @@ class RAGDocumentAssistant(BaseAssistant):
         self.vault = VaultManager(OBSIDIAN_VAULT_DIR)
         self.storage = DocumentStorage(DATA_DIR / "processed")
         self.repository = ProcessedDocumentRepository(self.storage)
-
+        self.vector_store = ChromaStore(
+            persist_dir=CHROMA_DIR,
+            collection_name=CHROMA_COLLECTION,
+        )
+        # конструктор
         self.document_pipeline = DocumentPipeline(
             reader=self.reader,
             cleaner=self.cleaner,
@@ -48,6 +53,7 @@ class RAGDocumentAssistant(BaseAssistant):
             storage=self.storage,
             embedder_provider=self._get_embedder,
             repository=self.repository,
+            vector_store=self.vector_store,
         )
 
         self.query_pipeline = RAGQueryPipeline(
@@ -55,7 +61,7 @@ class RAGDocumentAssistant(BaseAssistant):
             vault=self.vault,
             rag_provider=self._get_rag,
             process_document_callback=self.process_document,
-            repository=self.repository,
+            vector_store=self.vector_store,
         )
 
     def _get_embedder(self) -> Embedder:
@@ -156,4 +162,8 @@ class RAGDocumentAssistant(BaseAssistant):
             overlap=overlap,
             auto_process=auto_process,
             response_mode=response_mode,
-        )   
+        )
+
+    def delete_document(self, doc_id: str) -> bool:
+        self.vector_store.delete_document(doc_id)
+        return self.storage.delete_document(doc_id)

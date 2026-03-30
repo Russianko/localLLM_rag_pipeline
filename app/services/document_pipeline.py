@@ -12,14 +12,15 @@ from app.errors import DocumentNotFoundError, InvalidRequestError
 
 class DocumentPipeline:
     def __init__(
-            self,
-            reader: PDFReader,
-            cleaner: TextCleaner,
-            summarizer: Summarizer,
-            vault: VaultManager,
-            storage: DocumentStorage,
-            embedder_provider,
-            repository: ProcessedDocumentRepository,
+        self,
+        reader,
+        cleaner,
+        summarizer,
+        vault,
+        storage,
+        embedder_provider,
+        repository,
+        vector_store,
     ):
         self.reader = reader
         self.cleaner = cleaner
@@ -28,6 +29,7 @@ class DocumentPipeline:
         self.storage = storage
         self.embedder_provider = embedder_provider
         self.repository = repository
+        self.vector_store = vector_store
 
     def process(
             self,
@@ -43,20 +45,25 @@ class DocumentPipeline:
 
             if not pdf_path.exists():
                 raise DocumentNotFoundError(f"PDF file not found: {pdf_path}")
+            print("STEP 1: pdf exists")
 
             raw_output_path.parent.mkdir(parents=True, exist_ok=True)
 
             raw_text = self.reader.extract_text(pdf_path)
             if not raw_text or not raw_text.strip():
                 raise InvalidRequestError("Не удалось извлечь текст из PDF.")
+            print("STEP 2: raw extracted")
 
             raw_output_path.write_text(raw_text, encoding="utf-8")
 
             clean_text = self.cleaner.clean(raw_text)
             if not clean_text or not clean_text.strip():
                 raise InvalidRequestError("После очистки текст пустой.")
+            print("STEP 3: clean text ready")
 
             summary_data = self._build_summary(clean_text, summary_limit)
+            print("STEP 4: summary built")
+
             vector_data = self._build_vectors(
                 filename=filename,
                 clean_text=clean_text,
@@ -64,6 +71,7 @@ class DocumentPipeline:
                 overlap=overlap,
                 force_rebuild=force_rebuild,
             )
+            print("STEP 5: vectors built")
 
             processed_doc = self.repository.save(
                 doc_id=filename,
@@ -74,8 +82,10 @@ class DocumentPipeline:
                 chunks=vector_data["chunks"],
                 embeddings=vector_data["embeddings"],
             )
+            print("STEP 6: repository saved")
 
             self.storage.delete_error(filename)
+            print("STEP 7: error deleted")
 
             document_note_path = self.vault.save_document_note(
                 title=build_note_title(filename),
@@ -84,6 +94,7 @@ class DocumentPipeline:
                 key_points=summary_data["key_points"],
                 action_items=summary_data["action_items"],
             )
+            print("STEP 8: note saved")
 
             return {
                 "status": "processed",
@@ -143,9 +154,19 @@ class DocumentPipeline:
 
             embedder = self.embedder_provider()
             embeddings = embedder.embed_chunks(chunks)
+
+            doc_id = Path(filename).stem
+
+            self.vector_store.upsert_document_chunks(
+                doc_id=doc_id,
+                chunks=chunks,
+                embeddings=embeddings,
+            )
+
         else:
             chunks = self.storage.load_chunks(filename)
             embeddings = self.storage.load_embeddings(filename)
+
 
         return {
             "chunks": chunks,

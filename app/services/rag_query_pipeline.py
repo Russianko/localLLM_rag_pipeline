@@ -1,26 +1,25 @@
 from pathlib import Path
-from app.repositories import ProcessedDocumentRepository
-from app.config import build_pdf_path
+
+from app.config import build_pdf_path, CHAT_MODEL, RAG_SCORE_THRESHOLD
 from app.storage import DocumentStorage
 from app.vault_manager import VaultManager
 from app.errors import DocumentNotFoundError, DocumentNotProcessedError
 
 
-
 class RAGQueryPipeline:
     def __init__(
-            self,
-            storage: DocumentStorage,
-            vault: VaultManager,
-            rag_provider,
-            process_document_callback,
-            repository: ProcessedDocumentRepository,
+        self,
+        storage: DocumentStorage,
+        vault: VaultManager,
+        rag_provider,
+        process_document_callback,
+        vector_store,
     ):
         self.storage = storage
         self.vault = vault
         self.rag_provider = rag_provider
         self.process_document_callback = process_document_callback
-        self.repository = repository
+        self.vector_store = vector_store
 
     def answer(
             self,
@@ -37,11 +36,7 @@ class RAGQueryPipeline:
         if not pdf_path.exists():
             raise DocumentNotFoundError(f"PDF file not found: {pdf_path}")
 
-        if self.repository.exists(filename):
-            processed_doc = self.repository.load(filename)
-            chunks = processed_doc.chunks
-            chunk_embeddings = processed_doc.embeddings
-        else:
+        if not self.storage.has_processed_data(filename):
             if not auto_process:
                 raise DocumentNotProcessedError(
                     "Документ ещё не обработан. Сначала вызови /process или включи auto_process."
@@ -49,27 +44,62 @@ class RAGQueryPipeline:
 
             self.process_document_callback(
                 filename=filename,
+                summary_limit=None,
                 chunk_size=chunk_size,
                 overlap=overlap,
+                force_rebuild=False,
             )
 
-            processed_doc = self.repository.load(filename)
-            chunks = processed_doc.chunks
-            chunk_embeddings = processed_doc.embeddings
+        print("ASK STEP 1: pdf exists / processed check passed")
 
-            if not chunks:
-                raise DocumentNotProcessedError(
-                    "После обработки не удалось загрузить чанки документа."
-                )
+        doc_id = Path(filename).stem
 
         rag = self.rag_provider()
-        result = rag.answer_question(
-            question=question,
-            chunks=chunks,
-            chunk_embeddings=chunk_embeddings,
+        print("ASK STEP 2: rag provider ok")
+
+        query_embedding = rag.embedder.embed_text(question)
+        print("ASK STEP 3: query embedding built")
+
+        top_chunks = self.vector_store.search(
+            query_embedding=query_embedding,
             top_k=top_k,
-            response_mode=response_mode,
+            doc_id=doc_id,
         )
+        print("ASK STEP 4: vector search done")
+        print("ASK TOP CHUNKS:", top_chunks[:1] if top_chunks else top_chunks)
+
+        if not top_chunks:
+            result = {
+                "answer": "В предоставленных фрагментах нет данных для ответа.",
+                "top_chunks": [],
+            }
+        else:
+            best_score = float(top_chunks[0]["score"])
+            if best_score < RAG_SCORE_THRESHOLD:
+                result = {
+                    "answer": (
+                        "В предоставленных фрагментах нет достаточно релевантных данных "
+                        "для уверенного ответа. Попробуйте задать более конкретный вопрос."
+                    ),
+                    "top_chunks": top_chunks,
+                }
+            else:
+                context = rag.build_context(top_chunks)
+                print("ASK STEP 5: context built")
+
+                if rag.is_general_question(question):
+                    prompt = rag.build_general_prompt(question, context)
+                else:
+                    prompt = rag.build_specific_prompt(question, context)
+                print("ASK STEP 6: prompt built")
+
+                answer = rag.llm.ask(prompt=prompt, model=CHAT_MODEL)
+                print("ASK STEP 7: llm answer received")
+
+                result = {
+                    "answer": answer,
+                    "top_chunks": top_chunks,
+                }
 
         normalized_chunks = self._normalize_chunks(result.get("top_chunks", []))
 
@@ -93,9 +123,12 @@ class RAGQueryPipeline:
         normalized = []
 
         for i, item in enumerate(top_chunks):
+            metadata = item.get("metadata", {}) or {}
+            chunk_id = metadata.get("chunk_id", i)
+
             normalized.append(
                 {
-                    "chunk_id": i,
+                    "chunk_id": int(chunk_id),
                     "text": item["chunk"],
                     "score": float(item["score"]),
                 }
