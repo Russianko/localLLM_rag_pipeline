@@ -1,0 +1,154 @@
+[
+  {
+    "frame_name": "banner_1080x1080_ru",
+    "format_id": "1080x1080",
+    "language": "ru",
+    "node_plans": [
+      {
+        "node_name": "headline",
+        "decision": "try_layout_adjustments",
+        "adjustment_plan": [
+          {
+            "action": "reduce_font_size",
+            "from": 40,
+            "to": 30,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "action": "reduce_line_height",
+            "from": 42,
+            "to": 32,
+            "priority": 2
+          },
+          {
+            "action": "enable_auto_resize_height",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "action": "fallback_to_short_version",
+            "value": true,
+            "priority": 4
+          }
+        ],
+        "plan_status": "planned",
+        "translation_key": "gameHistory.sell.title",
+        "fit_status": "overflow",
+        "length": 27,
+        "estimated_max_chars": 25,
+        "text": "Продать ставку <0>{id}</0>?"
+      },
+      {
+        "node_name": "subheadline",
+        "decision": "try_layout_adjustments",
+        "adjustment_plan": [
+          {
+            "action": "reduce_font_size",
+            "from": 26,
+            "to": 20,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "action": "reduce_line_height",
+            "from": 30,
+            "to": 22,
+            "priority": 2
+          },
+          {
+            "action": "enable_auto_resize_height",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "action": "fallback_to_short_version",
+            "value": true,
+            "priority": 4
+          }
+        ],
+        "plan_status": "planned",
+        "translation_key": "gameHistory.sell.question",
+        "fit_status": "overflow",
+        "length": 61,
+        "estimated_max_chars": 45,
+        "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?"
+      },
+      {
+        "node_name": "cta",
+        "decision": "manual_review_required",
+        "adjustment_plan": [],
+        "plan_status": "not_applicable",
+        "translation_key": "resetting.request.subtitle_email",
+        "fit_status": "overflow",
+        "length": 109,
+        "estimated_max_chars": 18,
+        "text": "Введите адрес электронной почты, который вы используете для входа в , чтобы получить ссылку для сброса пароля"
+      }
+    ]
+  },
+  {
+    "frame_name": "banner_1080x1080_en",
+    "format_id": "1080x1080",
+    "language": "en",
+    "node_plans": [
+      {
+        "node_name": "headline",
+        "decision": "apply_as_is",
+        "adjustment_plan": [],
+        "plan_status": "not_applicable",
+        "translation_key": "gameHistory.sell.title",
+        "fit_status": "fit",
+        "length": 21,
+        "estimated_max_chars": 25,
+        "text": "Sell bet <0>{id}</0>?"
+      },
+      {
+        "node_name": "subheadline",
+        "decision": "try_layout_adjustments",
+        "adjustment_plan": [
+          {
+            "action": "reduce_font_size",
+            "from": 26,
+            "to": 20,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "action": "reduce_line_height",
+            "from": 30,
+            "to": 22,
+            "priority": 2
+          },
+          {
+            "action": "enable_auto_resize_height",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "action": "fallback_to_short_version",
+            "value": true,
+            "priority": 4
+          }
+        ],
+        "plan_status": "planned",
+        "translation_key": "gameHistory.sell.question",
+        "fit_status": "overflow",
+        "length": 63,
+        "estimated_max_chars": 45,
+        "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?"
+      },
+      {
+        "node_name": "cta",
+        "decision": "manual_review_required",
+        "adjustment_plan": [],
+        "plan_status": "not_applicable",
+        "translation_key": "resetting.request.subtitle_email",
+        "fit_status": "overflow",
+        "length": 76,
+        "estimated_max_chars": 18,
+        "text": "Enter the email you use to log into to receive a link to reset your password"
+      }
+    ]
+  }
+]

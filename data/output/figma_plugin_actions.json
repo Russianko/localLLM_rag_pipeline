@@ -1,0 +1,166 @@
+[
+  {
+    "frame_name": "banner_1080x1080_ru",
+    "format_id": "1080x1080",
+    "language": "ru",
+    "node_actions": [
+      {
+        "node_name": "headline",
+        "translation_key": "gameHistory.sell.title",
+        "decision": "try_layout_adjustments",
+        "plan_status": "planned",
+        "actions": [
+          {
+            "type": "TRY_REDUCE_FONT_SIZE",
+            "node_name": "headline",
+            "translation_key": "gameHistory.sell.title",
+            "text": "Продать ставку <0>{id}</0>?",
+            "from": 40,
+            "to": 30,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "type": "TRY_REDUCE_LINE_HEIGHT",
+            "node_name": "headline",
+            "translation_key": "gameHistory.sell.title",
+            "text": "Продать ставку <0>{id}</0>?",
+            "from": 42,
+            "to": 32,
+            "priority": 2
+          },
+          {
+            "type": "TRY_ENABLE_AUTO_RESIZE_HEIGHT",
+            "node_name": "headline",
+            "translation_key": "gameHistory.sell.title",
+            "text": "Продать ставку <0>{id}</0>?",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "type": "TRY_FALLBACK_TO_SHORT_VERSION",
+            "node_name": "headline",
+            "translation_key": "gameHistory.sell.title",
+            "text": "Продать ставку <0>{id}</0>?",
+            "value": true,
+            "priority": 4
+          }
+        ]
+      },
+      {
+        "node_name": "subheadline",
+        "translation_key": "gameHistory.sell.question",
+        "decision": "try_layout_adjustments",
+        "plan_status": "planned",
+        "actions": [
+          {
+            "type": "TRY_REDUCE_FONT_SIZE",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?",
+            "from": 26,
+            "to": 20,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "type": "TRY_REDUCE_LINE_HEIGHT",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?",
+            "from": 30,
+            "to": 22,
+            "priority": 2
+          },
+          {
+            "type": "TRY_ENABLE_AUTO_RESIZE_HEIGHT",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "type": "TRY_FALLBACK_TO_SHORT_VERSION",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?",
+            "value": true,
+            "priority": 4
+          }
+        ]
+      },
+      {
+        "node_name": "cta",
+        "translation_key": "resetting.request.subtitle_email",
+        "decision": "manual_review_required",
+        "plan_status": "not_applicable",
+        "actions": []
+      }
+    ]
+  },
+  {
+    "frame_name": "banner_1080x1080_en",
+    "format_id": "1080x1080",
+    "language": "en",
+    "node_actions": [
+      {
+        "node_name": "headline",
+        "translation_key": "gameHistory.sell.title",
+        "decision": "apply_as_is",
+        "plan_status": "not_applicable",
+        "actions": []
+      },
+      {
+        "node_name": "subheadline",
+        "translation_key": "gameHistory.sell.question",
+        "decision": "try_layout_adjustments",
+        "plan_status": "planned",
+        "actions": [
+          {
+            "type": "TRY_REDUCE_FONT_SIZE",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?",
+            "from": 26,
+            "to": 20,
+            "step": 1,
+            "priority": 1
+          },
+          {
+            "type": "TRY_REDUCE_LINE_HEIGHT",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?",
+            "from": 30,
+            "to": 22,
+            "priority": 2
+          },
+          {
+            "type": "TRY_ENABLE_AUTO_RESIZE_HEIGHT",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?",
+            "value": true,
+            "priority": 3
+          },
+          {
+            "type": "TRY_FALLBACK_TO_SHORT_VERSION",
+            "node_name": "subheadline",
+            "translation_key": "gameHistory.sell.question",
+            "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?",
+            "value": true,
+            "priority": 4
+          }
+        ]
+      },
+      {
+        "node_name": "cta",
+        "translation_key": "resetting.request.subtitle_email",
+        "decision": "manual_review_required",
+        "plan_status": "not_applicable",
+        "actions": []
+      }
+    ]
+  }
+]

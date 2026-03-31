@@ -1,0 +1,124 @@
+[
+  {
+    "frame_name": "banner_1080x1080_ru",
+    "format_id": "1080x1080",
+    "language": "ru",
+    "nodes": [
+      {
+        "node_name": "headline",
+        "translation_key": "gameHistory.sell.title",
+        "text": "Продать ставку <0>{id}</0>?",
+        "rules": {
+          "node_name": "headline",
+          "max_lines": 2,
+          "max_font_size": 40,
+          "min_font_size": 30,
+          "font_step": 1,
+          "allow_line_height_reduce": true,
+          "default_line_height": 42,
+          "min_line_height": 32,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": true,
+          "allow_short_version": true
+        }
+      },
+      {
+        "node_name": "subheadline",
+        "translation_key": "gameHistory.sell.question",
+        "text": "Вы уверены что хотите продать ставку зa\\u00A0<0>{amount}</0>?",
+        "rules": {
+          "node_name": "subheadline",
+          "max_lines": 3,
+          "max_font_size": 26,
+          "min_font_size": 20,
+          "font_step": 1,
+          "allow_line_height_reduce": true,
+          "default_line_height": 30,
+          "min_line_height": 22,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": true,
+          "allow_short_version": true
+        }
+      },
+      {
+        "node_name": "cta",
+        "translation_key": "resetting.request.subtitle_email",
+        "text": "Введите адрес электронной почты, который вы используете для входа в , чтобы получить ссылку для сброса пароля",
+        "rules": {
+          "node_name": "cta",
+          "max_lines": 1,
+          "max_font_size": 18,
+          "min_font_size": 16,
+          "font_step": 1,
+          "allow_line_height_reduce": false,
+          "default_line_height": 20,
+          "min_line_height": 20,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": false,
+          "allow_short_version": false
+        }
+      }
+    ]
+  },
+  {
+    "frame_name": "banner_1080x1080_en",
+    "format_id": "1080x1080",
+    "language": "en",
+    "nodes": [
+      {
+        "node_name": "headline",
+        "translation_key": "gameHistory.sell.title",
+        "text": "Sell bet <0>{id}</0>?",
+        "rules": {
+          "node_name": "headline",
+          "max_lines": 2,
+          "max_font_size": 40,
+          "min_font_size": 30,
+          "font_step": 1,
+          "allow_line_height_reduce": true,
+          "default_line_height": 42,
+          "min_line_height": 32,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": true,
+          "allow_short_version": true
+        }
+      },
+      {
+        "node_name": "subheadline",
+        "translation_key": "gameHistory.sell.question",
+        "text": "Are you sure you want to sell the bet for\\u00A0<0>{amount}</0>?",
+        "rules": {
+          "node_name": "subheadline",
+          "max_lines": 3,
+          "max_font_size": 26,
+          "min_font_size": 20,
+          "font_step": 1,
+          "allow_line_height_reduce": true,
+          "default_line_height": 30,
+          "min_line_height": 22,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": true,
+          "allow_short_version": true
+        }
+      },
+      {
+        "node_name": "cta",
+        "translation_key": "resetting.request.subtitle_email",
+        "text": "Enter the email you use to log into to receive a link to reset your password",
+        "rules": {
+          "node_name": "cta",
+          "max_lines": 1,
+          "max_font_size": 18,
+          "min_font_size": 16,
+          "font_step": 1,
+          "allow_line_height_reduce": false,
+          "default_line_height": 20,
+          "min_line_height": 20,
+          "allow_tracking_reduce": false,
+          "allow_auto_resize_height": false,
+          "allow_short_version": false
+        }
+      }
+    ]
+  }
+]

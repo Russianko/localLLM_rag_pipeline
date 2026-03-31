@@ -1,0 +1,28 @@
+[
+  {
+    "frame_name": "banner_1080x1080_ru",
+    "format_id": "1080x1080",
+    "language": "ru",
+    "node_name": "cta",
+    "translation_key": "resetting.request.subtitle_email",
+    "text": "Введите адрес электронной почты, который вы используете для входа в MOSTBET, чтобы получить ссылку для сброса пароля",
+    "length": 116,
+    "estimated_max_chars": 18,
+    "fit_status": "overflow",
+    "decision": "manual_review_required",
+    "reason": "Text exceeds the estimated limit. No safe automatic adjustment is allowed."
+  },
+  {
+    "frame_name": "banner_1080x1080_en",
+    "format_id": "1080x1080",
+    "language": "en",
+    "node_name": "cta",
+    "translation_key": "resetting.request.subtitle_email",
+    "text": "Enter the email you use to log into MOSTBET to receive a link to reset your password",
+    "length": 84,
+    "estimated_max_chars": 18,
+    "fit_status": "overflow",
+    "decision": "manual_review_required",
+    "reason": "Text exceeds the estimated limit. No safe automatic adjustment is allowed."
+  }
+]
