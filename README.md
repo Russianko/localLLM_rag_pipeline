@@ -1,147 +1,167 @@
-# 🚀 Local AI Assistant Platform
+# 🧠 Local AI Station (RAG Platform)
 
-Modular AI system for document understanding, semantic search and workflow automation.
-
-Originally built as a legal document assistant, the system evolved into a multi-purpose AI platform with RAG pipelines, API access and external tool integrations (e.g. Figma plugin).
+Self-hosted AI system for document understanding and question answering using local LLMs.
 
 ---
 
-## 🧠 Overview
+## 🚀 Overview
 
-This project implements a full AI backend system capable of:
+Local AI Station is a **production-style RAG (Retrieval-Augmented Generation) platform** that allows you to:
 
-- processing and understanding documents
-- answering questions using RAG (Retrieval-Augmented Generation)
-- acting as an assistant that can control external tools (e.g. Figma plugin)
-- integrating into real workflows via API
+- process PDF documents
+- extract structured knowledge (summary, key points, actions)
+- perform semantic search
+- ask questions using local LLMs
+- store knowledge in Obsidian-compatible format
 
-The system is designed not as a script, but as a **service-oriented AI backend**.
-
----
-
-## ⚙️ Core Capabilities
-
-### 📄 Document Intelligence
-- PDF parsing and text extraction  
-- smart chunking with overlap  
-- semantic embeddings  
-
-### 🔍 Semantic Search
-- similarity-based retrieval  
-- context-aware chunk selection  
-
-### 🤖 RAG (Question Answering)
-- LLM-based answer generation  
-- answers grounded in retrieved context  
-- source-aware responses  
-
-### 🔌 API-first Architecture
-- REST API for integration  
-- document management  
-- query endpoints  
-
-### 🎨 AI + Design Workflow (Figma Integration)
-- generation of structured payloads for Figma  
-- assistant capable of controlling plugin actions  
-- automation of design workflows  
+The system runs **fully locally** using LM Studio — no external APIs required.
 
 ---
 
-## 🧩 Architecture
-Document → Cleaning → Chunking → Embeddings → Vector Search → LLM → Answer
+## 🏗 Architecture
 
-## Extended flow:
-User → API → Assistant → RAG Pipeline → External Tool (Figma) → Result
+The system is designed with **clear separation of concerns**:
+
+LM Studio (Model Runtime)
+↓
+FastAPI (Orchestration Layer)
+↓
+Redis (Queue & Job State)
+↓
+Worker (Async Processing)
+↓
+Chroma (Vector Storage)
+
+
+
+### Key Principles
+
+- Models are NOT embedded into application logic
+- Orchestration is separated from inference
+- Async ingestion via queue
+- Persistent vector retrieval
+- Ready for containerization and Kubernetes
 
 ---
 
-## 🌐 API
+## 🔁 Pipelines
+
+### 📥 Document Processing (Async)
+
+POST /process
+→ Redis queue
+→ Worker
+→ PDF → Clean → Summary → Chunk → Embeddings
+→ Chroma + Storage + Obsidian
+
+
+---
+
+### ❓ Question Answering (RAG)
+
+POST /ask
+→ Embed query
+→ Vector search (Chroma)
+→ Top-K chunks
+→ LLM answer
+
+
+---
+
+## ⚙️ Tech Stack
+
+- **Python / FastAPI** — API & orchestration
+- **LM Studio** — local LLM runtime
+- **Redis** — queue & job coordination
+- **Chroma** — vector database
+- **Sentence Transformers** — embeddings
+- **Obsidian** — knowledge storage
+
+---
+
+## 📡 API
 
 ### Health
+
 GET /health
 GET /health/ready
+
+
 ### Documents
+
 GET /documents
 GET /documents/{doc_id}
 DELETE /documents/{doc_id}
+
+
 ### Processing
+
 POST /process
-### Query
+GET /jobs/{job_id}
+
+
+### RAG
+
 POST /ask
 
-- orchestrating RAG pipelines  
-- generating structured outputs  
-- interacting with external tools (plugin execution)  
-
-This enables building **AI-driven workflows**, not just Q&A systems.
 
 ---
 
-## ⚡ Tech Stack
+## 🧪 Example Flow
 
-- Python 3.10+
-- FastAPI
-- SentenceTransformers
-- Vector search (cosine similarity / extendable to DB)
-- Local / API-based LLM
-- Modular service architecture
+1. Upload document:
 
----
+```bash
+POST /process
 
-## 📂 Project Structure
+2. Check status:
 
-app/
-assistants/
-services/
-vectorstore/
-pipeline_service.py
-rag_answerer.py
-retriever.py
-embedder.py
+GET /jobs/{job_id}
 
-localization/
-(figma plugin integration logic)
+3. Ask question:
 
----
+POST /ask
 
-## 🚀 Use Cases
+🐳 Docker & Deployment
 
-- Legal document assistant  
-- Knowledge base search  
-- AI-powered internal tools  
-- Design workflow automation (via Figma plugin)  
-- Multi-agent AI systems  
+The project is prepared for:
 
----
+Docker (local setup)
+Kubernetes / k3s (future scaling)
 
-## 🧠 Engineering Highlights
+Included:
 
-- Built full RAG pipeline from scratch  
-- Designed modular service architecture  
-- Implemented API-first system for integration  
-- Extended system to support tool usage (plugin control)  
-- Transition from single-purpose assistant → platform  
+Dockerfile
+rag-deployment.yaml
+rag-service.yaml
+📁 Project Structure
 
----
+/api        → FastAPI endpoints
+/app        → core logic (pipelines, assistants)
+/config     → configs & mappings
+/infra      → (recommended for k8s/docker)
+/docs       → documentation
 
-## 🔮 Roadmap
+🎯 Current Status
 
-- Hybrid search (BM25 + embeddings)  
-- vector DB (FAISS / Qdrant)  
-- retrieval reranking  
-- evaluation metrics (latency, recall)  
-- multi-agent orchestration  
-- production deployment  
+✅ End-to-end working
+✅ Async ingestion via Redis
+✅ Persistent vector search
+✅ Local LLM integration
+⚠️ Docker/K8s setup in progress
 
----
+🔮 Roadmap
+Docker Compose setup
+Kubernetes deployment
+Embedding optimization
+UI / dashboard
+Multi-assistant support
+💡 Why This Project
 
-## 👨‍💻 Author
+This project demonstrates:
 
-Backend developer building real-world systems at the intersection of:
-
-- APIs  
-- data processing  
-- AI (RAG, LLM integration)  
-- automation  
-
----
+RAG architecture
+async backend design
+queue-based processing
+LLM integration
+production-oriented system design
