@@ -1,19 +1,27 @@
 from api.schemas import (
-    HealthResponse, ProcessRequest, ProcessResponse, AskRequest,
-    AskResponse, DocumentInfo, DocumentDetail, DeleteDocumentResponse
+    HealthResponse,
+    ProcessRequest,
+    ProcessJobAcceptedResponse,
+    JobStatusResponse,
+    AskRequest,
+    AskResponse,
+    DocumentInfo,
+    DocumentDetail,
+    DeleteDocumentResponse,
 )
 from app.pipeline_service import PipelineService
 from app.assistants.factory import build_assistant
 from app.config import ASSISTANT_TYPE
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from fastapi.routing import APIRoute
 from app.errors import (
     AppError,
     DocumentNotFoundError,
     DocumentNotProcessedError,
     InvalidRequestError,
 )
+from app.job_queue import enqueue_process_job
+from app.job_status import get_job_status
 
 app = FastAPI(
     title="Local AI Assistant",
@@ -38,8 +46,6 @@ def get_documents():
     return service.list_documents()
 
 
-print("🔥 REGISTERING /process")
-
 @app.post("/ask", response_model=AskResponse)
 def ask_document(payload: AskRequest):
     return service.ask_document(
@@ -58,15 +64,25 @@ def get_document(doc_id: str):
     return service.get_document(doc_id)
 
 
-@app.post("/process", response_model=ProcessResponse)
+@app.post("/process", status_code=202, response_model=ProcessJobAcceptedResponse)
 def process_document(payload: ProcessRequest):
-    return service.process_document(
+    return enqueue_process_job(
         filename=payload.filename,
         summary_limit=payload.summary_limit,
         chunk_size=payload.chunk_size,
         overlap=payload.overlap,
         force_rebuild=payload.force_rebuild,
     )
+
+
+@app.get("/jobs/{job_id}", response_model=JobStatusResponse)
+def get_job(job_id: str):
+    job = get_job_status(job_id)
+
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Job not found: {job_id}")
+
+    return job
 
 
 @app.delete("/documents/{doc_id}", response_model=DeleteDocumentResponse)
@@ -104,6 +120,3 @@ async def app_error_handler(request: Request, exc: AppError):
         status_code=400,
         content={"detail": str(exc)},
     )
-
-print("=== OPENAPI PATHS ===")
-print(list(app.openapi()["paths"].keys()))

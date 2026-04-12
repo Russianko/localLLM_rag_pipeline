@@ -1,6 +1,6 @@
 from app.assistants.base import BaseAssistant
 from app.config import (
-    BASE_URL,
+    LM_STUDIO_BASE_URL,
     CHAT_MODEL,
     EMBEDDING_MODEL,
     DATA_DIR,
@@ -11,7 +11,10 @@ from app.config import (
     DEFAULT_OVERLAP,
     DEFAULT_TOP_K,
     DEFAULT_RESPONSE_MODE,
+    CHROMA_COLLECTION,
+    CHROMA_DIR,
 )
+
 from app.embedder import Embedder
 from app.pdf_reader import PDFReader
 from app.rag_answerer import RAGAnswerer
@@ -23,8 +26,8 @@ from app.text_cleaner import TextCleaner
 from app.vault_manager import VaultManager
 from app.repositories import ProcessedDocumentRepository
 from app.llm_client import LLMClient
-from app.config import CHROMA_COLLECTION, CHROMA_DIR
 from app.vectorstore import ChromaStore
+
 from pathlib import Path
 
 
@@ -36,15 +39,13 @@ class RAGDocumentAssistant(BaseAssistant):
 
         self.embedder = None
         self.rag = None
+        self.vector_store = None
 
         self.vault = VaultManager(OBSIDIAN_VAULT_DIR)
         self.storage = DocumentStorage(DATA_DIR / "processed")
         self.repository = ProcessedDocumentRepository(self.storage)
-        self.vector_store = ChromaStore(
-            persist_dir=CHROMA_DIR,
-            collection_name=CHROMA_COLLECTION,
-        )
-        # конструктор
+
+        # document pipeline
         self.document_pipeline = DocumentPipeline(
             reader=self.reader,
             cleaner=self.cleaner,
@@ -53,21 +54,30 @@ class RAGDocumentAssistant(BaseAssistant):
             storage=self.storage,
             embedder_provider=self._get_embedder,
             repository=self.repository,
-            vector_store=self.vector_store,
+            vector_store_provider=self._get_vector_store,
         )
 
+        # query pipeline
         self.query_pipeline = RAGQueryPipeline(
             storage=self.storage,
             vault=self.vault,
             rag_provider=self._get_rag,
             process_document_callback=self.process_document,
-            vector_store=self.vector_store,
+            vector_store_provider=self._get_vector_store,
         )
 
     def _get_embedder(self) -> Embedder:
         if self.embedder is None:
             self.embedder = Embedder()
         return self.embedder
+
+    def _get_vector_store(self) -> ChromaStore:
+        if self.vector_store is None:
+            self.vector_store = ChromaStore(
+                persist_dir=CHROMA_DIR,
+                collection_name=CHROMA_COLLECTION,
+            )
+        return self.vector_store
 
     def _get_rag(self) -> RAGAnswerer:
         if self.rag is None:
@@ -84,15 +94,8 @@ class RAGDocumentAssistant(BaseAssistant):
                 [p for p in processed_dir.iterdir() if p.is_dir()]
             )
 
-        llm_reachable = False
-        llm_error = None
-
-        try:
-            client = LLMClient()
-            client.get_models()
-            llm_reachable = True
-        except Exception as e:
-            llm_error = str(e)
+        client = LLMClient()
+        llm_reachable, llm_error = client.is_reachable()
 
         status = "ok" if llm_reachable else "degraded"
 
@@ -101,7 +104,7 @@ class RAGDocumentAssistant(BaseAssistant):
             "service": "local-rag-assistant",
             "assistant_type": "rag",
             "dev_fast_mode": DEV_FAST_MODE,
-            "base_url": BASE_URL,
+            "base_url": LM_STUDIO_BASE_URL,
             "chat_model": CHAT_MODEL,
             "embedding_model": EMBEDDING_MODEL,
             "defaults": {
@@ -129,12 +132,12 @@ class RAGDocumentAssistant(BaseAssistant):
         }
 
     def process_document(
-            self,
-            filename: str,
-            summary_limit: int,
-            chunk_size: int,
-            overlap: int,
-            force_rebuild: bool = False,
+        self,
+        filename: str,
+        summary_limit: int | None,
+        chunk_size: int | None,
+        overlap: int | None,
+        force_rebuild: bool = False,
     ) -> dict:
         return self.document_pipeline.process(
             filename=filename,
@@ -145,14 +148,14 @@ class RAGDocumentAssistant(BaseAssistant):
         )
 
     def ask(
-            self,
-            filename: str,
-            question: str,
-            top_k: int,
-            chunk_size: int,
-            overlap: int,
-            auto_process: bool = True,
-            response_mode: str = "detailed",
+        self,
+        filename: str,
+        question: str,
+        top_k: int,
+        chunk_size: int,
+        overlap: int,
+        auto_process: bool = True,
+        response_mode: str = "detailed",
     ) -> dict:
         return self.query_pipeline.answer(
             filename=filename,
@@ -165,5 +168,5 @@ class RAGDocumentAssistant(BaseAssistant):
         )
 
     def delete_document(self, doc_id: str) -> bool:
-        self.vector_store.delete_document(doc_id)
+        self._get_vector_store().delete_document(doc_id)
         return self.storage.delete_document(doc_id)

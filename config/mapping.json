@@ -1,0 +1,42 @@
+{
+  "frames": [
+    {
+      "frame_name": "banner_1080x1080_ru",
+      "format_id": "1080x1080",
+      "language": "ru",
+      "fields": {
+        "headline": "gameHistory.sell.title",
+        "subheadline": "gameHistory.sell.question",
+        "cta": "resetting.request.subtitle_email"
+      }
+    },
+    {
+      "frame_name": "banner_1080x1080_en",
+      "format_id": "1080x1080",
+      "language": "en",
+      "fields": {
+        "headline": "gameHistory.sell.title",
+        "subheadline": "gameHistory.sell.question",
+        "cta": "resetting.request.subtitle_email"
+      }
+    }
+  ],
+  "targets": {
+  "gameHistory.sell.title": {
+    "frame_name_template": "banner_1080x1080_{locale}",
+    "path": ["Banner", "Offer", "Text", "Headline text"],
+    "target_type": "TEXT"
+  },
+
+  "gameHistory.sell.question": {
+    "frame_name_template": "banner_1080x1080_{locale}",
+    "path": ["Banner", "Offer", "Text", "Main text"],
+    "target_type": "TEXT"
+  },
+
+  "resetting.request.subtitle_email": {
+    "frame_name_template": "banner_1080x1080_{locale}",
+    "path": ["Banner", "Offer", "Button"],
+    "target_type": "TEXT_OR_CONTAINER_WITH_TEXT"
+  }
+},

@@ -6,7 +6,6 @@ from app.repositories import ProcessedDocumentRepository
 from app.errors import DocumentNotFoundError
 
 
-
 class PipelineService:
     def __init__(self, assistant: BaseAssistant | None = None):
         self.assistant = assistant or build_assistant("rag")
@@ -86,11 +85,11 @@ class PipelineService:
             "has_chunks": status["has_chunks"],
             "has_clean_text": status["has_clean_text"],
             "is_processed": status["is_processed"],
-            "has_error": status["has_error"],
+            "has_error": status.get("has_error", False),
         }
 
     def delete_document(self, doc_id: str) -> dict:
-        deleted = self.assistant.delete_document(doc_id)
+        deleted = self.storage.delete_document(doc_id)
 
         if not deleted:
             raise DocumentNotFoundError(f"Document not found: {doc_id}")

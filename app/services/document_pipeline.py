@@ -12,15 +12,15 @@ from app.errors import DocumentNotFoundError, InvalidRequestError
 
 class DocumentPipeline:
     def __init__(
-        self,
-        reader,
-        cleaner,
-        summarizer,
-        vault,
-        storage,
-        embedder_provider,
-        repository,
-        vector_store,
+            self,
+            reader,
+            cleaner,
+            summarizer,
+            vault,
+            storage,
+            embedder_provider,
+            repository,
+            vector_store_provider,
     ):
         self.reader = reader
         self.cleaner = cleaner
@@ -29,7 +29,7 @@ class DocumentPipeline:
         self.storage = storage
         self.embedder_provider = embedder_provider
         self.repository = repository
-        self.vector_store = vector_store
+        self.vector_store_provider = vector_store_provider
 
     def process(
             self,
@@ -45,7 +45,6 @@ class DocumentPipeline:
 
             if not pdf_path.exists():
                 raise DocumentNotFoundError(f"PDF file not found: {pdf_path}")
-            print("STEP 1: pdf exists")
 
             raw_output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -157,7 +156,9 @@ class DocumentPipeline:
 
             doc_id = Path(filename).stem
 
-            self.vector_store.upsert_document_chunks(
+            vector_store = self.vector_store_provider()
+
+            vector_store.upsert_document_chunks(
                 doc_id=doc_id,
                 chunks=chunks,
                 embeddings=embeddings,

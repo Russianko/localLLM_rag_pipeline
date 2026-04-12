@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-ai-assistant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: local-ai-assistant
+  template:
+    metadata:
+      labels:
+        app: local-ai-assistant
+    spec:
+      containers:
+        - name: local-ai-assistant
+          image: local-ai-assistant:local
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000

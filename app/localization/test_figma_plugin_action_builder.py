@@ -2,6 +2,9 @@ from app.localization.figma_payload_builder import build_figma_payload
 from app.localization.fit_decision_engine import decide_payload_actions
 from app.localization.layout_adjustment_planner import build_payload_adjustment_plan
 from app.localization.figma_plugin_action_builder import build_plugin_actions_from_layout_plan
+from app.localization.mapping_loader import load_mapping
+from pathlib import Path
+
 
 # Пути к входным файлам
 xlsx_path = r"C:\Users\ADMINSKY\Desktop\Личная LLM\data\input\March 2026.xlsx"
@@ -37,7 +40,11 @@ plans = build_payload_adjustment_plan(
 )
 
 # 5. Превращаем план в plugin actions
-plugin_actions = build_plugin_actions_from_layout_plan(plans)
+BASE_DIR = Path(__file__).resolve().parents[2]
+mapping_path = BASE_DIR / "config" / "mapping.json"
+
+mapping = load_mapping(str(mapping_path))
+plugin_actions = build_plugin_actions_from_layout_plan(plans, mapping)
 
 print("=== PLUGIN ACTIONS ===")
 

@@ -7,6 +7,8 @@ from app.localization.plugin_action_exporter import (
     load_plugin_actions,
     build_plugin_actions_summary,
 )
+from app.localization.mapping_loader import load_mapping
+
 
 # Пути к входным файлам
 xlsx_path = r"C:\Users\ADMINSKY\Desktop\Личная LLM\data\input\March 2026.xlsx"
@@ -45,7 +47,8 @@ plans = build_payload_adjustment_plan(
 )
 
 # 5. Строим plugin actions
-actions = build_plugin_actions_from_layout_plan(plans)
+mapping = load_mapping("config/mapping.json")
+actions = build_plugin_actions_from_layout_plan(plans, mapping)
 
 # 6. Сохраняем actions
 save_plugin_actions(actions, output_path)

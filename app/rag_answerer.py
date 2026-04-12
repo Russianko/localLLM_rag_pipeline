@@ -1,4 +1,4 @@
-from app.config import CHAT_MODEL
+from app.config import CHAT_MODEL, RAG_SCORE_THRESHOLD
 from app.llm_client import LLMClient
 from app.retriever import Retriever
 from app.prompts import build_general_rag_prompt, build_specific_rag_prompt
@@ -41,10 +41,10 @@ class RAGAnswerer:
         return any(pattern in question_lower for pattern in general_patterns)
 
     def build_general_prompt(
-            self,
-            question: str,
-            context: str,
-            response_mode: str = "detailed",
+        self,
+        question: str,
+        context: str,
+        response_mode: str = "detailed",
     ) -> str:
         return build_general_rag_prompt(
             question=question,
@@ -53,10 +53,10 @@ class RAGAnswerer:
         )
 
     def build_specific_prompt(
-            self,
-            question: str,
-            context: str,
-            response_mode: str = "detailed",
+        self,
+        question: str,
+        context: str,
+        response_mode: str = "detailed",
     ) -> str:
         return build_specific_rag_prompt(
             question=question,
@@ -65,12 +65,12 @@ class RAGAnswerer:
         )
 
     def answer_question(
-            self,
-            question: str,
-            chunks: list[str],
-            chunk_embeddings,
-            top_k: int = 3,
-            response_mode: str = "detailed",
+        self,
+        question: str,
+        chunks: list[str],
+        chunk_embeddings,
+        top_k: int = 3,
+        response_mode: str = "detailed",
     ) -> dict:
         query_embedding = self.embedder.embed_text(question)
 
@@ -88,7 +88,7 @@ class RAGAnswerer:
             }
 
         best_score = top_chunks[0]["score"]
-        if best_score < 0.45:
+        if best_score < RAG_SCORE_THRESHOLD:
             return {
                 "answer": (
                     "В предоставленных фрагментах нет достаточно релевантных данных "
@@ -100,9 +100,17 @@ class RAGAnswerer:
         context = self.build_context(top_chunks)
 
         if self.is_general_question(question):
-            prompt = self.build_general_prompt(question, context, response_mode=response_mode)
+            prompt = self.build_general_prompt(
+                question,
+                context,
+                response_mode=response_mode,
+            )
         else:
-            prompt = self.build_specific_prompt(question, context, response_mode=response_mode)
+            prompt = self.build_specific_prompt(
+                question,
+                context,
+                response_mode=response_mode,
+            )
 
         answer = self.llm.ask(prompt=prompt, model=CHAT_MODEL)
 
@@ -112,9 +120,10 @@ class RAGAnswerer:
         }
 
     def answer_from_top_chunks(
-            self,
-            question: str,
-            top_chunks: list[dict],
+        self,
+        question: str,
+        top_chunks: list[dict],
+        response_mode: str = "detailed",
     ) -> dict:
         if not top_chunks:
             return {
@@ -122,14 +131,32 @@ class RAGAnswerer:
                 "top_chunks": [],
             }
 
-        context = "\n\n".join(item["chunk"] for item in top_chunks)
+        best_score = float(top_chunks[0]["score"])
+        if best_score < RAG_SCORE_THRESHOLD:
+            return {
+                "answer": (
+                    "В предоставленных фрагментах нет достаточно релевантных данных "
+                    "для уверенного ответа. Попробуйте задать более конкретный вопрос."
+                ),
+                "top_chunks": top_chunks,
+            }
+
+        context = self.build_context(top_chunks)
 
         if self.is_general_question(question):
-            prompt = self.build_general_prompt(question, context)
+            prompt = self.build_general_prompt(
+                question,
+                context,
+                response_mode=response_mode,
+            )
         else:
-            prompt = self.build_specific_prompt(question, context)
+            prompt = self.build_specific_prompt(
+                question,
+                context,
+                response_mode=response_mode,
+            )
 
-        answer = self.llm.ask(prompt, model=self.chat_model)
+        answer = self.llm.ask(prompt=prompt, model=CHAT_MODEL)
 
         return {
             "answer": answer,

@@ -1,0 +1,45 @@
+{
+  "formats": {
+    "1080x1080": {
+      "headline": {
+        "node_name": "headline",
+        "max_lines": 2,
+        "max_font_size": 40,
+        "min_font_size": 30,
+        "font_step": 1,
+        "allow_line_height_reduce": true,
+        "default_line_height": 42,
+        "min_line_height": 32,
+        "allow_tracking_reduce": false,
+        "allow_auto_resize_height": true,
+        "allow_short_version": true
+      },
+      "subheadline": {
+        "node_name": "subheadline",
+        "max_lines": 3,
+        "max_font_size": 26,
+        "min_font_size": 20,
+        "font_step": 1,
+        "allow_line_height_reduce": true,
+        "default_line_height": 30,
+        "min_line_height": 22,
+        "allow_tracking_reduce": false,
+        "allow_auto_resize_height": true,
+        "allow_short_version": true
+      },
+      "cta": {
+        "node_name": "cta",
+        "max_lines": 1,
+        "max_font_size": 18,
+        "min_font_size": 16,
+        "font_step": 1,
+        "allow_line_height_reduce": false,
+        "default_line_height": 20,
+        "min_line_height": 20,
+        "allow_tracking_reduce": false,
+        "allow_auto_resize_height": false,
+        "allow_short_version": false
+      }
+    }
+  }
+}

@@ -1,6 +1,8 @@
 from app.localization.spreadsheet_reader import read_translations
 from app.localization.mapping_loader import load_mapping, get_frames
 from app.localization.rules_loader import load_rules, get_format_rules
+from mapping_loader import get_target
+from app.localization.mapping_loader import load_mapping, get_frames, get_target
 
 
 def build_figma_payload(
@@ -59,6 +61,7 @@ def build_figma_payload(
         language = frame["language"]
         fields = frame["fields"]
 
+
         # Получаем правила для конкретного формата, например "1080x1080"
         format_rules = get_format_rules(rules, format_id)
 
@@ -98,6 +101,7 @@ def build_figma_payload(
             # Достаём сам текст, который надо вставить в Figma
             text = language_map[language]
 
+
             # Проверяем, есть ли правила для этого поля
             # Например для headline / subheadline / cta
             if node_name not in format_rules:
@@ -107,12 +111,15 @@ def build_figma_payload(
 
             node_rules = format_rules[node_name]
 
+            target = get_target(mapping, translation_key)
+
             # Формируем описание одного текстового узла для Figma
             node_payload = {
-                "node_name": node_name,
+                "node_name": node_name,  # пока оставь
                 "translation_key": translation_key,
                 "text": text,
                 "rules": node_rules,
+                "target": target  # 👈 ВАЖНО
             }
 
             nodes.append(node_payload)

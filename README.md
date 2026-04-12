@@ -1,116 +1,147 @@
-Local RAG Pipeline
+# 🚀 Local AI Assistant Platform
 
-A local document analysis system with semantic search and RAG-based question answering.
+Modular AI system for document understanding, semantic search and workflow automation.
 
-This project implements a full pipeline for processing documents, extracting meaning, and answering questions based on their content using Retrieval-Augmented Generation (RAG).
+Originally built as a legal document assistant, the system evolved into a multi-purpose AI platform with RAG pipelines, API access and external tool integrations (e.g. Figma plugin).
 
-Features
+---
 
-PDF text extraction
+## 🧠 Overview
 
-Smart text chunking with overlap
+This project implements a full AI backend system capable of:
 
-Embeddings using SentenceTransformers
+- processing and understanding documents
+- answering questions using RAG (Retrieval-Augmented Generation)
+- acting as an assistant that can control external tools (e.g. Figma plugin)
+- integrating into real workflows via API
 
-Semantic search (cosine similarity)
+The system is designed not as a script, but as a **service-oriented AI backend**.
 
-RAG (Retrieval-Augmented Generation)
+---
 
-Context-aware answers with source chunks
+## ⚙️ Core Capabilities
 
-Architecture
-Document (PDF)
-      ↓
-Text extraction
-      ↓
-Chunking
-      ↓
-Embeddings
-      ↓
-Semantic retrieval
-      ↓
-LLM (RAG)
-      ↓
-Answer + sources
+### 📄 Document Intelligence
+- PDF parsing and text extraction  
+- smart chunking with overlap  
+- semantic embeddings  
 
-Tech Stack
+### 🔍 Semantic Search
+- similarity-based retrieval  
+- context-aware chunk selection  
 
-Python 3.10+
+### 🤖 RAG (Question Answering)
+- LLM-based answer generation  
+- answers grounded in retrieved context  
+- source-aware responses  
 
-SentenceTransformers (paraphrase-multilingual-MiniLM-L12-v2)
+### 🔌 API-first Architecture
+- REST API for integration  
+- document management  
+- query endpoints  
 
-Local LLM (via API / client)
+### 🎨 AI + Design Workflow (Figma Integration)
+- generation of structured payloads for Figma  
+- assistant capable of controlling plugin actions  
+- automation of design workflows  
 
-NumPy (for similarity calculations)
+---
 
-Project Structure
+## 🧩 Architecture
+Document → Cleaning → Chunking → Embeddings → Vector Search → LLM → Answer
 
-local-rag-pipeline/
+## Extended flow:
+User → API → Assistant → RAG Pipeline → External Tool (Figma) → Result
+
+---
+
+## 🌐 API
+
+### Health
+GET /health
+GET /health/ready
+### Documents
+GET /documents
+GET /documents/{doc_id}
+DELETE /documents/{doc_id}
+### Processing
+POST /process
+### Query
+POST /ask
+
+- orchestrating RAG pipelines  
+- generating structured outputs  
+- interacting with external tools (plugin execution)  
+
+This enables building **AI-driven workflows**, not just Q&A systems.
+
+---
+
+## ⚡ Tech Stack
+
+- Python 3.10+
+- FastAPI
+- SentenceTransformers
+- Vector search (cosine similarity / extendable to DB)
+- Local / API-based LLM
+- Modular service architecture
+
+---
+
+## 📂 Project Structure
 
 app/
-chunker.py
-embedder.py
-retriever.py
+assistants/
+services/
+vectorstore/
+pipeline_service.py
 rag_answerer.py
-llm_client.py
-config.py
+retriever.py
+embedder.py
 
-data/
-extracted/
-run_embeddings.py
-run_semantic_search.py
-run_rag_answer.py
+localization/
+(figma plugin integration logic)
 
-README.md
-Setup
-git clone https://github.com/your-username/local-rag-pipeline.git
-cd local-rag-pipeline
+---
 
-python -m venv venv
-venv\Scripts\activate  # Windows
+## 🚀 Use Cases
 
-pip install -r requirements.txt
+- Legal document assistant  
+- Knowledge base search  
+- AI-powered internal tools  
+- Design workflow automation (via Figma plugin)  
+- Multi-agent AI systems  
 
-Usage
-1. Generate embeddings
-python run_embeddings.py
-2. Run semantic search
-python run_semantic_search.py
-3. Ask questions (RAG)
-python run_rag_answer.py
+---
 
-Example:
+## 🧠 Engineering Highlights
 
-QUESTION:
-Где в документе говорится о сокращении штата специалистов?
+- Built full RAG pipeline from scratch  
+- Designed modular service architecture  
+- Implemented API-first system for integration  
+- Extended system to support tool usage (plugin control)  
+- Transition from single-purpose assistant → platform  
 
-ANSWER:
+---
 
-How it works
+## 🔮 Roadmap
 
-Document is split into chunks
+- Hybrid search (BM25 + embeddings)  
+- vector DB (FAISS / Qdrant)  
+- retrieval reranking  
+- evaluation metrics (latency, recall)  
+- multi-agent orchestration  
+- production deployment  
 
-Each chunk is converted into vector embeddings
+---
 
-User question is also embedded
+## 👨‍💻 Author
 
-System finds most relevant chunks
+Backend developer building real-world systems at the intersection of:
 
-LLM generates answer based only on retrieved context
+- APIs  
+- data processing  
+- AI (RAG, LLM integration)  
+- automation  
 
-Current Status
-
-Integration with knowledge base (PARA / notes)
-
-Future Improvements
-
-Save embeddings to disk (avoid recomputation)
-
-Add FAISS / vector DB
-
-Improve answer quality (prompt tuning)
-
-Telegram / web interface
-
-Integration with personal knowledge system
-
+---

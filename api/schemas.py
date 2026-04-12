@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Literal, Any
 
 from app.config import get_default_pipeline_params, DEFAULT_RESPONSE_MODE
 
@@ -14,19 +14,10 @@ class ProcessRequest(BaseModel):
     force_rebuild: bool = False
 
 
-class ProcessResponse(BaseModel):
-    status: str
-    source_document: str
-    summary: str
-    key_points: List[str]
-    action_items: List[str]
-    document_note_path: str
-    raw_text_path: str
-    clean_text_path: str
-    summary_path: str
-    chunks_path: str
-    embeddings_path: str
-    chunks_count: int
+class ProcessJobAcceptedResponse(BaseModel):
+    job_id: str
+    status: Literal["queued"]
+    queue: str
 
 
 class AskRequest(BaseModel):
@@ -123,3 +114,13 @@ class HealthResponse(BaseModel):
     storage: StorageInfo
     runtime: RuntimeInfo
     llm_connection: LLMConnectionInfo
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "running", "done", "failed"]
+    created_at: str
+    updated_at: str
+    payload: dict[str, Any]
+    result: Optional[dict[str, Any]] = None
+    error: Optional[str] = None

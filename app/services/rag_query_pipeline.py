@@ -1,9 +1,13 @@
 from pathlib import Path
+import logging
 
-from app.config import build_pdf_path, CHAT_MODEL, RAG_SCORE_THRESHOLD
+from app.config import build_pdf_path, RAG_SCORE_THRESHOLD
 from app.storage import DocumentStorage
 from app.vault_manager import VaultManager
 from app.errors import DocumentNotFoundError, DocumentNotProcessedError
+
+
+logger = logging.getLogger(__name__)
 
 
 class RAGQueryPipeline:
@@ -13,23 +17,23 @@ class RAGQueryPipeline:
         vault: VaultManager,
         rag_provider,
         process_document_callback,
-        vector_store,
+        vector_store_provider,
     ):
         self.storage = storage
         self.vault = vault
         self.rag_provider = rag_provider
         self.process_document_callback = process_document_callback
-        self.vector_store = vector_store
+        self.vector_store_provider = vector_store_provider
 
     def answer(
-            self,
-            filename: str,
-            question: str,
-            top_k: int = 3,
-            chunk_size: int = 500,
-            overlap: int = 100,
-            auto_process: bool = True,
-            response_mode: str = "detailed",
+        self,
+        filename: str,
+        question: str,
+        top_k: int = 3,
+        chunk_size: int = 500,
+        overlap: int = 100,
+        auto_process: bool = True,
+        response_mode: str = "detailed",
     ) -> dict:
         pdf_path = build_pdf_path(filename)
 
@@ -50,23 +54,23 @@ class RAGQueryPipeline:
                 force_rebuild=False,
             )
 
-        print("ASK STEP 1: pdf exists / processed check passed")
+        logger.info("ASK STEP 1: pdf exists / processed check passed")
 
         doc_id = Path(filename).stem
-
         rag = self.rag_provider()
-        print("ASK STEP 2: rag provider ok")
+        vector_store = self.vector_store_provider()
+
+        logger.info("ASK STEP 2: rag provider and vector store ready")
 
         query_embedding = rag.embedder.embed_text(question)
-        print("ASK STEP 3: query embedding built")
+        logger.info("ASK STEP 3: query embedding built")
 
-        top_chunks = self.vector_store.search(
+        top_chunks = vector_store.search(
             query_embedding=query_embedding,
             top_k=top_k,
             doc_id=doc_id,
         )
-        print("ASK STEP 4: vector search done")
-        print("ASK TOP CHUNKS:", top_chunks[:1] if top_chunks else top_chunks)
+        logger.info("ASK STEP 4: vector search done")
 
         if not top_chunks:
             result = {
@@ -75,6 +79,7 @@ class RAGQueryPipeline:
             }
         else:
             best_score = float(top_chunks[0]["score"])
+
             if best_score < RAG_SCORE_THRESHOLD:
                 result = {
                     "answer": (
@@ -84,22 +89,12 @@ class RAGQueryPipeline:
                     "top_chunks": top_chunks,
                 }
             else:
-                context = rag.build_context(top_chunks)
-                print("ASK STEP 5: context built")
-
-                if rag.is_general_question(question):
-                    prompt = rag.build_general_prompt(question, context)
-                else:
-                    prompt = rag.build_specific_prompt(question, context)
-                print("ASK STEP 6: prompt built")
-
-                answer = rag.llm.ask(prompt=prompt, model=CHAT_MODEL)
-                print("ASK STEP 7: llm answer received")
-
-                result = {
-                    "answer": answer,
-                    "top_chunks": top_chunks,
-                }
+                result = rag.answer_from_top_chunks(
+                    question=question,
+                    top_chunks=top_chunks,
+                    response_mode=response_mode,
+                )
+                logger.info("ASK STEP 5: llm answer received")
 
         normalized_chunks = self._normalize_chunks(result.get("top_chunks", []))
 
