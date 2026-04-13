@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: ai-station
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: local_ai_station-api:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: LM_STUDIO_BASE_URL
+              value: http://host.docker.internal:1234/v1
+          volumeMounts:
+            - name: storage
+              mountPath: /app/local_brain
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: ai-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: ai-station
+spec:
+  type: NodePort
+  selector:
+    app: api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30080
