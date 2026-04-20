@@ -63,6 +63,9 @@ class ChromaStore(BaseVectorStore):
 
         return items
 
+    def ask(self, *args, **kwargs):
+        raise NotImplementedError("ask is not implemented for ChromaStore")
+
     def delete_document(self, doc_id: str) -> None:
         self.collection.delete(where={"doc_id": doc_id})
 

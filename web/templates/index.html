@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AI Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-badge">AI</div>
+                <div>
+                    <div class="brand-title">Local AI Assistant</div>
+                    <div class="brand-subtitle">RAG + LM Studio</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Текущий документ</div>
+                <div id="currentDocument" class="document-pill">Не выбран</div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Статус</div>
+                <div id="jobStatus" class="status-pill idle">Ожидание</div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-label">Документы</div>
+                <button id="refreshDocsBtn" class="ghost-btn" type="button">Обновить список</button>
+                <div id="documentsList" class="documents-list"></div>
+            </div>
+        </aside>
+
+        <main class="chat-layout">
+            <header class="chat-header">
+                <div>
+                    <h1>Document Chat</h1>
+                    <p>Загрузи PDF или задай вопрос по уже обработанному документу</p>
+                </div>
+            </header>
+
+            <section id="chat" class="chat-window"></section>
+
+            <section id="sourcesPanel" class="sources-panel hidden">
+                <div class="sources-title">Использованные фрагменты</div>
+                <div id="sourcesList" class="sources-list"></div>
+            </section>
+
+            <footer class="composer">
+                <div class="composer-top">
+                    <label for="fileInput" class="attach-btn">📎 Файл</label>
+                    <input id="fileInput" type="file" accept=".pdf" hidden>
+                    <span id="selectedFileName" class="selected-file">Файл не выбран</span>
+                </div>
+
+                <div class="composer-bottom">
+                    <textarea
+                        id="messageInput"
+                        class="message-input"
+                        rows="1"
+                        placeholder="Напиши вопрос по документу..."
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" type="button">Отправить</button>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

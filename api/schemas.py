@@ -124,3 +124,11 @@ class JobStatusResponse(BaseModel):
     payload: dict[str, Any]
     result: Optional[dict[str, Any]] = None
     error: Optional[str] = None
+
+
+class UploadResponse(BaseModel):
+    filename: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    saved_to: str

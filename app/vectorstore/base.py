@@ -23,3 +23,16 @@ class BaseVectorStore(ABC):
     @abstractmethod
     def delete_document(self, doc_id: str) -> None:
         pass
+
+    @abstractmethod
+    def ask(
+            self,
+            filename: str,
+            question: str,
+            top_k: int = 3,
+            chunk_size: int = 500,
+            overlap: int = 100,
+            auto_process: bool = True,
+            response_mode: str = "detailed",
+    ) -> dict:
+        pass

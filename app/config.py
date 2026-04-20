@@ -5,6 +5,9 @@ import os
 def get_env(name: str, default=None):
     return os.getenv(name, default)
 
+MAX_UPLOAD_SIZE_MB = int(get_env("MAX_UPLOAD_SIZE_MB", "50"))
+MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
 # === REDIS CONFIG ===
 REDIS_HOST = get_env("REDIS_HOST", "localhost")
 REDIS_PORT = int(get_env("REDIS_PORT", "6379"))
