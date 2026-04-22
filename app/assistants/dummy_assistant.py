@@ -66,3 +66,4 @@ class DummyAssistant(BaseAssistant):
             "rag_note_path": "dummy://rag_note",
             "top_chunks": [],
         }
+

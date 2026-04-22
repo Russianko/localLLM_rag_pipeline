@@ -13,6 +13,12 @@ const documentsListEl = document.getElementById("documentsList");
 const refreshDocsBtnEl = document.getElementById("refreshDocsBtn");
 const sourcesPanelEl = document.getElementById("sourcesPanel");
 const sourcesListEl = document.getElementById("sourcesList");
+const assistantSelectEl = document.getElementById("assistantSelect");
+const assistantDescriptionEl = document.getElementById("assistantDescription");
+
+
+let currentAssistant = "auto";
+let assistantsCache = [];
 
 function escapeHtml(str) {
     return String(str)
@@ -43,6 +49,10 @@ function addMessage(text, sender = "assistant") {
     row.appendChild(bubble);
     chatEl.appendChild(row);
     chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function isDocumentReady() {
+    return jobStatusEl.textContent === "Готово" || currentJobId === null;
 }
 
 function showSources(chunks = []) {
@@ -91,16 +101,56 @@ function renderDocuments(documents) {
         `;
 
         item.addEventListener("click", () => {
-            const filename = doc.id.endsWith(".pdf") ? doc.id : `${doc.id}.pdf`;
-            setCurrentDocument(filename);
-            addMessage(`Выбран документ: ${filename}`, "system");
-        });
+    const filename = doc.id.endsWith(".pdf") ? doc.id : `${doc.id}.pdf`;
+    setCurrentDocument(filename);
+    showSources([]);
+    addMessage(`Выбран документ: ${filename}`, "system");
+});
 
         documentsListEl.appendChild(item);
     });
 
     renderDocumentsActiveState();
 }
+
+async function loadAssistants() {
+    try {
+        const res = await fetch("/assistants");
+        const data = await res.json();
+
+        assistantsCache = data.assistants || [];
+
+        assistantSelectEl.innerHTML = "";
+
+        assistantsCache.forEach((assistant) => {
+            const option = document.createElement("option");
+            option.value = assistant.type;
+            option.textContent = assistant.name;
+            assistantSelectEl.appendChild(option);
+        });
+
+        currentAssistant = data.default || "auto";
+        assistantSelectEl.value = currentAssistant;
+        updateAssistantDescription();
+    } catch (err) {
+        console.error(err);
+        assistantSelectEl.innerHTML = `<option value="auto">Auto</option>`;
+        assistantDescriptionEl.textContent = "Автоматический выбор агента недоступен.";
+        currentAssistant = "auto";
+        addMessage("Не удалось загрузить список ассистентов.", "error");
+    }
+}
+
+function updateAssistantDescription() {
+    const selected = assistantsCache.find(a => a.type === assistantSelectEl.value);
+    currentAssistant = assistantSelectEl.value;
+    assistantDescriptionEl.textContent = selected ? selected.description : "";
+}
+
+assistantSelectEl.addEventListener("change", () => {
+    updateAssistantDescription();
+    addMessage(`Режим агента: ${assistantSelectEl.options[assistantSelectEl.selectedIndex].text}`, "system");
+});
 
 function renderDocumentsActiveState() {
     const items = documentsListEl.querySelectorAll(".document-item");
@@ -148,6 +198,7 @@ async function pollStatusChat(jobId) {
                 addMessage("Документ обработан и готов к вопросам.", "system");
                 clearInterval(pollTimer);
                 pollTimer = null;
+                currentJobId = null;
                 await loadDocuments();
                 return;
             }
@@ -157,6 +208,7 @@ async function pollStatusChat(jobId) {
                 addMessage(`Ошибка обработки: ${data.error || "неизвестная ошибка"}`, "error");
                 clearInterval(pollTimer);
                 pollTimer = null;
+                currentJobId = null;
             }
         } catch (err) {
             setStatus("Ошибка", "error");
@@ -175,6 +227,7 @@ async function uploadAndProcess(file) {
     setStatus("Загрузка...", "running");
     addMessage(`Файл: ${file.name}`, "user");
     addMessage("Загружаю и запускаю обработку...", "system");
+    showSources([]);
 
     try {
         const res = await fetch("/upload-and-process", {
@@ -210,6 +263,11 @@ async function askQuestion(question) {
         return;
     }
 
+    if (!isDocumentReady()) {
+        addMessage("Документ ещё обрабатывается. Дождитесь статуса 'Готово'.", "error");
+        return;
+    }
+
     setLoadingState(true);
     showSources([]);
     addMessage(question, "user");
@@ -226,7 +284,8 @@ async function askQuestion(question) {
                 question: question,
                 top_k: 2,
                 auto_process: true,
-                response_mode: "short"
+                response_mode: "short",
+                assistant_type: currentAssistant
             })
         });
 
@@ -236,7 +295,15 @@ async function askQuestion(question) {
             throw new Error(data.detail || "Ask failed");
         }
 
+
+
         addMessage(data.answer || "Ответ не получен.", "assistant");
+
+        if (data.selected_assistant) {
+            const selected = assistantsCache.find(a => a.type === data.selected_assistant);
+            const assistantName = selected ? selected.name : data.selected_assistant;
+            addMessage(`Использован агент: ${assistantName}`, "system");
+        }
         showSources(data.top_chunks || []);
     } catch (err) {
         addMessage(`Ошибка запроса: ${err.message}`, "error");
@@ -288,3 +355,4 @@ addMessage("Привет. Загрузи PDF или выбери докумен�
 loadDocuments();
 setStatus("Ожидание", "idle");
 autoResizeTextarea();
+loadAssistants();

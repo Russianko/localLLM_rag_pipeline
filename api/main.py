@@ -16,7 +16,7 @@ from api.schemas import (
     )
 from app.services.file_service import save_upload_file
 from app.pipeline_service import PipelineService
-from app.assistants.factory import build_assistant
+from app.assistants.factory import build_assistant, list_assistants
 from app.config import ASSISTANT_TYPE
 from fastapi import FastAPI, HTTPException, Request
 from app.errors import (
@@ -33,6 +33,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 from app.config import get_default_pipeline_params
+from api.schemas import AssistantsResponse
+from app.assistants.router import select_assistant
 
 
 app = FastAPI(
@@ -66,7 +68,20 @@ def get_documents():
 
 @app.post("/ask", response_model=AskResponse)
 def ask_document(payload: AskRequest):
-    return service.ask_document(
+    selected_assistant = select_assistant(
+        question=payload.question,
+        filename=payload.filename,
+        forced_assistant=payload.assistant_type,
+    )
+
+    if selected_assistant == ASSISTANT_TYPE:
+        selected_service = service
+    else:
+        selected_service = PipelineService(
+            assistant=build_assistant(selected_assistant)
+        )
+
+    result = selected_service.ask_document(
         filename=payload.filename,
         question=payload.question,
         top_k=payload.top_k,
@@ -76,6 +91,15 @@ def ask_document(payload: AskRequest):
         response_mode=payload.response_mode,
     )
 
+    result["selected_assistant"] = selected_assistant
+    return result
+
+@app.get("/assistants", response_model=AssistantsResponse)
+def get_assistants():
+    return {
+        "assistants": list_assistants(),
+        "default": "auto",
+    }
 
 @app.get("/documents/{doc_id}", response_model=DocumentDetail)
 def get_document(doc_id: str):

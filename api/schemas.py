@@ -28,6 +28,7 @@ class AskRequest(BaseModel):
     overlap: int = Field(default=defaults["overlap"], ge=0, le=1000)
     auto_process: bool = True
     response_mode: str = Field(default=DEFAULT_RESPONSE_MODE)
+    assistant_type: str = Field(default="auto")
 
 
 class ChunkResult(BaseModel):
@@ -42,6 +43,7 @@ class AskResponse(BaseModel):
     answer: str
     rag_note_path: str
     top_chunks: List[ChunkResult]
+    selected_assistant: str
 
 
 class DocumentInfo(BaseModel):
@@ -132,3 +134,12 @@ class UploadResponse(BaseModel):
     content_type: str
     size_bytes: int
     saved_to: str
+
+class AssistantInfo(BaseModel):
+    type: str
+    name: str
+    description: str
+
+class AssistantsResponse(BaseModel):
+    assistants: List[AssistantInfo]
+    default: str

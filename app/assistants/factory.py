@@ -2,13 +2,45 @@ from app.assistants.rag_document_assistant import RAGDocumentAssistant
 from app.assistants.dummy_assistant import DummyAssistant
 
 
+ASSISTANT_REGISTRY = {
+    "rag": {
+        "name": "RAG Assistant",
+        "description": "Отвечает по загруженным документам через retrieval.",
+        "builder": RAGDocumentAssistant,
+    },
+    "dummy": {
+        "name": "Dummy Assistant",
+        "description": "Тестовый ассистент для проверки UI и маршрутизации.",
+        "builder": DummyAssistant,
+    },
+}
+
+
 def build_assistant(assistant_type: str = "rag"):
-    normalized_type = assistant_type.strip().lower()
+    config = ASSISTANT_REGISTRY.get(assistant_type)
 
-    if normalized_type == "rag":
-        return RAGDocumentAssistant()
+    if not config:
+        raise ValueError(f"Unknown assistant type: {assistant_type}")
 
-    if normalized_type == "dummy":
-        return DummyAssistant()
+    return config["builder"]()
 
-    raise ValueError(f"Unknown assistant type: {assistant_type}")
+
+def list_assistants() -> list[dict]:
+    assistants = [
+        {
+            "type": "auto",
+            "name": "Auto",
+            "description": "Автоматический выбор агента по контексту.",
+        }
+    ]
+
+    assistants.extend(
+        {
+            "type": key,
+            "name": value["name"],
+            "description": value["description"],
+        }
+        for key, value in ASSISTANT_REGISTRY.items()
+    )
+
+    return assistants
