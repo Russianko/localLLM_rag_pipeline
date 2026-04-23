@@ -349,6 +349,27 @@ body {
     box-shadow: var(--shadow);
 }
 
+.voice-btn {
+    min-width: 56px;
+    height: 52px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 22px;
+    background: #1f2937;
+    color: white;
+    margin-right: 8px;
+    transition: 0.2s ease;
+}
+
+.voice-btn:hover {
+    opacity: 0.9;
+}
+
+.voice-btn.recording {
+    background: #dc2626;
+}
+
 .send-btn:hover {
     background: var(--accent-hover);
 }

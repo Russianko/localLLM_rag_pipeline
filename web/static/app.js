@@ -15,10 +15,26 @@ const sourcesPanelEl = document.getElementById("sourcesPanel");
 const sourcesListEl = document.getElementById("sourcesList");
 const assistantSelectEl = document.getElementById("assistantSelect");
 const assistantDescriptionEl = document.getElementById("assistantDescription");
+const voiceBtnEl = document.getElementById("voiceBtn");
 
 
 let currentAssistant = "auto";
 let assistantsCache = [];
+let isRecording = false;
+
+voiceBtnEl.addEventListener("click", async () => {
+    if (isRecording) {
+        stopVoiceRecording();
+        isRecording = false;
+        voiceBtnEl.textContent = "🎤";
+        voiceBtnEl.classList.remove("recording");
+    } else {
+        await startVoiceRecording();
+        isRecording = true;
+        voiceBtnEl.textContent = "⏹";
+        voiceBtnEl.classList.add("recording");
+    }
+});
 
 function escapeHtml(str) {
     return String(str)
@@ -163,6 +179,49 @@ function renderDocumentsActiveState() {
     });
 }
 
+let mediaRecorder;
+let chunks = [];
+
+async function startVoiceRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+  chunks = [];
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) chunks.push(event.data);
+  };
+
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(chunks, { type: "audio/webm" });
+    const formData = new FormData();
+    formData.append("file", blob, "voice.webm");
+    formData.append("filename", currentFile || "");
+    formData.append("assistant_type", currentAssistant);
+
+    const response = await fetch("/voice", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (data.transcript) {
+    addMessage(data.transcript, "user");
+    }
+
+    addMessage(data.answer || "Ответ не получен.", "assistant");
+    // тут вставляешь transcript как user message
+    // answer как assistant message
+  };
+
+  mediaRecorder.start();
+}
+
+function stopVoiceRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+}
+
 async function loadDocuments() {
     try {
         const res = await fetch("/documents");
@@ -258,12 +317,14 @@ async function uploadAndProcess(file) {
 }
 
 async function askQuestion(question) {
-    if (!currentFile) {
+    const needsDocument = currentAssistant === "rag";
+
+    if (needsDocument && !currentFile) {
         addMessage("Сначала загрузите или выберите документ.", "error");
         return;
     }
 
-    if (!isDocumentReady()) {
+    if (needsDocument && !isDocumentReady()) {
         addMessage("Документ ещё обрабатывается. Дождитесь статуса 'Готово'.", "error");
         return;
     }
@@ -295,8 +356,6 @@ async function askQuestion(question) {
             throw new Error(data.detail || "Ask failed");
         }
 
-
-
         addMessage(data.answer || "Ответ не получен.", "assistant");
 
         if (data.selected_assistant) {
@@ -304,6 +363,7 @@ async function askQuestion(question) {
             const assistantName = selected ? selected.name : data.selected_assistant;
             addMessage(`Использован агент: ${assistantName}`, "system");
         }
+
         showSources(data.top_chunks || []);
     } catch (err) {
         addMessage(`Ошибка запроса: ${err.message}`, "error");
@@ -351,7 +411,7 @@ messageInputEl.addEventListener("keydown", async (event) => {
 
 refreshDocsBtnEl.addEventListener("click", loadDocuments);
 
-addMessage("Привет. Загрузи PDF или выбери документ слева и задай вопрос.", "system");
+addMessage("Привет. Можешь просто задать вопрос или загрузить PDF и спросить по документу.", "system");
 loadDocuments();
 setStatus("Ожидание", "idle");
 autoResizeTextarea();

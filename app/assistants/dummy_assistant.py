@@ -48,8 +48,8 @@ class DummyAssistant(BaseAssistant):
 
     def ask(
             self,
-            filename: str,
             question: str,
+            filename: str | None = None,
             top_k: int = 3,
             chunk_size: int = 500,
             overlap: int = 100,
@@ -57,13 +57,10 @@ class DummyAssistant(BaseAssistant):
             response_mode: str = "detailed",
     ) -> dict:
         return {
-            "source_document": filename,
+            "source_document": filename or "",
             "question": question,
-            "answer": (
-                f"DummyAssistant получил вопрос: '{question}' "
-                f"по документу '{filename}' в режиме '{response_mode}'."
-            ),
-            "rag_note_path": "dummy://rag_note",
+            "answer": f"[DummyAssistant] Тестовый ответ на вопрос: {question}",
+            "rag_note_path": "",
             "top_chunks": [],
         }
 

@@ -84,6 +84,13 @@ def get_default_pipeline_params():
     }
 
 
+# === ASR CONFIG ===
+ASR_MODEL = get_env("ASR_MODEL", "small")
+ASR_DEVICE = get_env("ASR_DEVICE", "cuda")   # cuda | cpu
+ASR_COMPUTE_TYPE = get_env("ASR_COMPUTE_TYPE", "int8")
+ASR_LANGUAGE = get_env("ASR_LANGUAGE", "ru")
+
+
 # === VECTOR STORE ===
 
 VECTOR_DB_TYPE = get_env("VECTOR_DB_TYPE", "chroma")

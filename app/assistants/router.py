@@ -1,7 +1,7 @@
 from typing import Optional
 
 
-DEFAULT_ASSISTANT = "rag"
+DEFAULT_ASSISTANT = "chat"
 
 
 def select_assistant(

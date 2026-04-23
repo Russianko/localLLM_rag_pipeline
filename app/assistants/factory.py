@@ -1,5 +1,6 @@
 from app.assistants.rag_document_assistant import RAGDocumentAssistant
 from app.assistants.dummy_assistant import DummyAssistant
+from app.assistants.chat_assistant import ChatAssistant
 
 
 ASSISTANT_REGISTRY = {
@@ -7,6 +8,11 @@ ASSISTANT_REGISTRY = {
         "name": "RAG Assistant",
         "description": "Отвечает по загруженным документам через retrieval.",
         "builder": RAGDocumentAssistant,
+    },
+    "chat": {
+        "name": "Chat Assistant",
+        "description": "Универсальный ассистент без привязки к документу.",
+        "builder": ChatAssistant,
     },
     "dummy": {
         "name": "Dummy Assistant",

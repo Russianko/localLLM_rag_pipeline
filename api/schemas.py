@@ -21,7 +21,7 @@ class ProcessJobAcceptedResponse(BaseModel):
 
 
 class AskRequest(BaseModel):
-    filename: str
+    filename: str | None = None
     question: str = Field(..., min_length=2)
     top_k: int = Field(default=defaults["top_k"], ge=1, le=10)
     chunk_size: int = Field(default=defaults["chunk_size"], ge=100, le=5000)
@@ -36,6 +36,12 @@ class ChunkResult(BaseModel):
     text: str
     score: float
 
+class VoiceResponse(BaseModel):
+    transcript: str
+    answer: str
+    selected_assistant: str
+    source_document: str
+    top_chunks: List[ChunkResult]
 
 class AskResponse(BaseModel):
     source_document: str

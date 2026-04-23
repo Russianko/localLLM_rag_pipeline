@@ -38,14 +38,34 @@ class PipelineService:
         )
 
     def ask_document(
-        self,
-        filename: str,
-        question: str,
-        top_k: int | None = None,
-        chunk_size: int | None = None,
-        overlap: int | None = None,
-        auto_process: bool = True,
-        response_mode: str | None = None,
+            self,
+            filename: str | None,
+            question: str,
+            top_k: int | None = None,
+            chunk_size: int | None = None,
+            overlap: int | None = None,
+            auto_process: bool = True,
+            response_mode: str | None = None,
+    ) -> dict:
+        return self.ask(
+            filename=filename,
+            question=question,
+            top_k=top_k,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            auto_process=auto_process,
+            response_mode=response_mode,
+        )
+
+    def ask(
+            self,
+            filename: str | None,
+            question: str,
+            top_k: int | None = None,
+            chunk_size: int | None = None,
+            overlap: int | None = None,
+            auto_process: bool = True,
+            response_mode: str | None = None,
     ) -> dict:
         defaults = get_default_pipeline_params()
 

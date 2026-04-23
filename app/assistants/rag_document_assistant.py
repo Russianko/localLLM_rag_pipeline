@@ -28,8 +28,6 @@ from app.repositories import ProcessedDocumentRepository
 from app.llm_client import LLMClient
 from app.vectorstore import ChromaStore
 
-from pathlib import Path
-
 
 class RAGDocumentAssistant(BaseAssistant):
     def __init__(self):
@@ -45,7 +43,6 @@ class RAGDocumentAssistant(BaseAssistant):
         self.storage = DocumentStorage(DATA_DIR / "processed")
         self.repository = ProcessedDocumentRepository(self.storage)
 
-        # document pipeline
         self.document_pipeline = DocumentPipeline(
             reader=self.reader,
             cleaner=self.cleaner,
@@ -57,7 +54,6 @@ class RAGDocumentAssistant(BaseAssistant):
             vector_store_provider=self._get_vector_store,
         )
 
-        # query pipeline
         self.query_pipeline = RAGQueryPipeline(
             storage=self.storage,
             vault=self.vault,
@@ -149,14 +145,17 @@ class RAGDocumentAssistant(BaseAssistant):
 
     def ask(
         self,
-        filename: str,
         question: str,
-        top_k: int,
-        chunk_size: int,
-        overlap: int,
+        filename: str | None = None,
+        top_k: int = 3,
+        chunk_size: int = 500,
+        overlap: int = 100,
         auto_process: bool = True,
         response_mode: str = "detailed",
     ) -> dict:
+        if not filename:
+            raise ValueError("RAG assistant requires filename.")
+
         return self.query_pipeline.answer(
             filename=filename,
             question=question,

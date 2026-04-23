@@ -35,17 +35,103 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from app.config import get_default_pipeline_params
 from api.schemas import AssistantsResponse
 from app.assistants.router import select_assistant
+from api.schemas import VoiceResponse
+import traceback
 
 
 app = FastAPI(
-    title="Local AI Assistant",
-    description=f"Active assistant: {ASSISTANT_TYPE}",
+title="Local AI Assistant",
+description=f"Active assistant: {ASSISTANT_TYPE}",
 )
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
 
 assistant = build_assistant(ASSISTANT_TYPE)
 service = PipelineService(assistant=assistant)
+
+asr_service = None
+
+
+@app.post("/voice", response_model=VoiceResponse)
+async def ask_by_voice(
+    file: UploadFile = File(...),
+    filename: str = "",
+    assistant_type: str = "auto",
+    top_k: int = 2,
+    chunk_size: int = 400,
+    overlap: int = 80,
+    auto_process: bool = True,
+    response_mode: str = "short",
+):
+    global asr_service
+
+    allowed_types = {
+        "audio/webm",
+        "audio/wav",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/x-m4a",
+        "application/octet-stream",
+    }
+
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio type: {file.content_type}",
+        )
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded audio is empty.")
+
+    suffix = Path(file.filename or "voice.webm").suffix or ".webm"
+
+    try:
+        if asr_service is None:
+            from app.services.asr_service import ASRService
+            asr_service = ASRService()
+
+        asr_result = asr_service.transcribe_bytes(audio_bytes, suffix=suffix)
+        transcript = asr_result["text"].strip()
+
+    except Exception:
+        print("ASR FAILED:")
+        traceback.print_exc()
+        transcript = "Привет, это fallback без распознавания"
+
+    if not transcript:
+        raise HTTPException(status_code=400, detail="Speech was not recognized.")
+
+    selected_assistant = select_assistant(
+        question=transcript,
+        filename=filename,
+        forced_assistant=assistant_type,
+    )
+
+    if selected_assistant == ASSISTANT_TYPE:
+        selected_service = service
+    else:
+        selected_service = PipelineService(
+            assistant=build_assistant(selected_assistant)
+        )
+
+    result = selected_service.ask(
+        filename=filename,
+        question=transcript,
+        top_k=top_k,
+        chunk_size=chunk_size,
+        overlap=overlap,
+        auto_process=auto_process,
+        response_mode=response_mode,
+    )
+
+    return {
+        "transcript": transcript,
+        "answer": result["answer"],
+        "selected_assistant": selected_assistant,
+        "source_document": result["source_document"],
+        "top_chunks": result["top_chunks"],
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -81,7 +167,7 @@ def ask_document(payload: AskRequest):
             assistant=build_assistant(selected_assistant)
         )
 
-    result = selected_service.ask_document(
+    result = selected_service.ask(
         filename=payload.filename,
         question=payload.question,
         top_k=payload.top_k,
