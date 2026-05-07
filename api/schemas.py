@@ -20,6 +20,21 @@ class ProcessJobAcceptedResponse(BaseModel):
     queue: str
 
 
+class MemoryStatusResponse(BaseModel):
+    session_id: str
+    messages_count: int
+    max_messages: int
+    has_memory: bool
+
+
+
+
+class MemoryResetResponse(BaseModel):
+    status: str
+    session_id: str
+    message: str
+
+
 class AskRequest(BaseModel):
     filename: str | None = None
     question: str = Field(..., min_length=2)
@@ -29,6 +44,7 @@ class AskRequest(BaseModel):
     auto_process: bool = True
     response_mode: str = Field(default=DEFAULT_RESPONSE_MODE)
     assistant_type: str = Field(default="auto")
+    session_id: str = Field(default="default")
 
 
 class ChunkResult(BaseModel):
@@ -149,3 +165,52 @@ class AssistantInfo(BaseModel):
 class AssistantsResponse(BaseModel):
     assistants: List[AssistantInfo]
     default: str
+
+
+class LocalizationToolRequest(BaseModel):
+    xlsx_path: str
+    mapping_path: str
+    rules_path: str
+
+
+class LocalizationToolResponse(BaseModel):
+    success: bool
+    tool_name: str
+    message: str
+    summary: dict | None = None
+    actions: list[dict] | None = None
+    output_path: str | None = None
+    error_data: dict | None = None
+
+class LocalizationToolRequest(BaseModel):
+    xlsx_path: str
+    mapping_path: str
+    rules_path: str
+    output_path: str | None = None
+
+class LocalizationActionsResponse(BaseModel):
+    output_path: str
+    actions: list[dict]
+
+class FigmaBridgeActionsResponse(BaseModel):
+    source: str
+    actions: list[dict]
+
+
+class FigmaBridgeExecutionRequest(BaseModel):
+    source: str
+    status: str
+    result: dict | None = None
+
+
+class FigmaBridgeExecutionResponse(BaseModel):
+    status: str
+    message: str
+
+class FigmaBridgeStatusResponse(BaseModel):
+    actions_file_exists: bool
+    actions_file_path: str
+    frames_count: int
+    nodes_count: int
+    actions_count: int
+    last_execution_result: dict | None = None

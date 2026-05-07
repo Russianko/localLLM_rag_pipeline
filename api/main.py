@@ -13,7 +13,15 @@ from api.schemas import (
     DocumentDetail,
     DeleteDocumentResponse,
     UploadResponse,
+    LocalizationToolRequest,
+    LocalizationToolResponse,
+    LocalizationActionsResponse,
+    FigmaBridgeActionsResponse,
+    FigmaBridgeExecutionRequest,
+    FigmaBridgeExecutionResponse,
+    FigmaBridgeStatusResponse,
     )
+from app.tools.localization_tool import LocalizationTool
 from app.services.file_service import save_upload_file
 from app.pipeline_service import PipelineService
 from app.assistants.factory import build_assistant, list_assistants
@@ -25,6 +33,9 @@ from app.errors import (
     DocumentNotProcessedError,
     InvalidRequestError,
 )
+
+from fastapi.middleware.cors import CORSMiddleware
+from app.localization.plugin_action_exporter import load_plugin_actions
 from app.job_queue import enqueue_process_job
 from app.job_status import get_job_status
 from app.config import ASSISTANT_TYPE, INPUT_DIR, MAX_UPLOAD_SIZE_BYTES
@@ -37,11 +48,20 @@ from api.schemas import AssistantsResponse
 from app.assistants.router import select_assistant
 from api.schemas import VoiceResponse
 import traceback
+from app.memory_store import chat_history
+from api.schemas import MemoryStatusResponse, MemoryResetResponse
 
 
 app = FastAPI(
 title="Local AI Assistant",
 description=f"Active assistant: {ASSISTANT_TYPE}",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 templates = Jinja2Templates(directory="web/templates")
@@ -51,6 +71,144 @@ service = PipelineService(assistant=assistant)
 
 asr_service = None
 
+last_figma_execution_result = None
+
+DEFAULT_FIGMA_ACTIONS_PATH = (
+    "C:\\Users\\ADMINSKY\\Desktop\\local_ai_station\\data\\output\\figma_plugin_actions.json"
+)
+
+@app.get("/memory/status", response_model=MemoryStatusResponse)
+def get_memory_status(session_id: str = "default"):
+    return chat_history.get_status(session_id)
+
+
+@app.post("/memory/reset", response_model=MemoryResetResponse)
+def reset_memory(session_id: str = "default"):
+    chat_history.reset(session_id)
+
+    return {
+        "status": "ok",
+        "session_id": session_id,
+        "message": "Memory reset.",
+    }
+
+
+@app.post("/tools/localization/run", response_model=LocalizationToolResponse)
+def run_localization_tool(payload: LocalizationToolRequest):
+    tool = LocalizationTool()
+
+    result = tool.execute(
+        xlsx_path=payload.xlsx_path,
+        mapping_path=payload.mapping_path,
+        rules_path=payload.rules_path,
+        output_path=payload.output_path,
+    )
+
+    data = result.data or {}
+
+    return {
+        "success": result.success,
+        "tool_name": result.tool_name,
+        "message": result.message,
+        "summary": data.get("summary"),
+        "actions": None,
+        "output_path": data.get("output_path"),
+        "error_data": data if not result.success else None,
+    }
+
+@app.get(
+    "/tools/localization/actions",
+    response_model=LocalizationActionsResponse,
+)
+def get_localization_actions(
+    output_path: str,
+):
+    actions = load_plugin_actions(output_path)
+
+    return {
+        "output_path": output_path,
+        "actions": actions,
+    }
+
+
+@app.get(
+    "/bridge/figma/actions",
+    response_model=FigmaBridgeActionsResponse,
+)
+def get_figma_bridge_actions(
+    output_path: str = DEFAULT_FIGMA_ACTIONS_PATH,
+):
+    actions = load_plugin_actions(output_path)
+
+    return {
+        "source": output_path,
+        "actions": actions,
+    }
+
+
+@app.post(
+    "/bridge/figma/execution-result",
+    response_model=FigmaBridgeExecutionResponse,
+)
+def receive_figma_execution_result(payload: FigmaBridgeExecutionRequest):
+    global last_figma_execution_result
+
+    last_figma_execution_result = {
+        "source": payload.source,
+        "status": payload.status,
+        "result": payload.result,
+    }
+
+    print("=== FIGMA EXECUTION RESULT ===")
+    print("source:", payload.source)
+    print("status:", payload.status)
+    print("result:", payload.result)
+
+    return {
+        "status": "ok",
+        "message": "Figma execution result received.",
+    }
+
+@app.get(
+    "/bridge/figma/status",
+    response_model=FigmaBridgeStatusResponse,
+)
+def get_figma_bridge_status(
+    output_path: str = DEFAULT_FIGMA_ACTIONS_PATH,
+):
+    file_path = Path(output_path)
+
+    if not file_path.exists():
+        return {
+            "actions_file_exists": False,
+            "actions_file_path": output_path,
+            "frames_count": 0,
+            "nodes_count": 0,
+            "actions_count": 0,
+            "last_execution_result": last_figma_execution_result,
+        }
+
+    actions = load_plugin_actions(output_path)
+
+    frames_count = len(actions)
+    nodes_count = 0
+    actions_count = 0
+
+    for frame in actions:
+        node_actions = frame.get("node_actions", [])
+        nodes_count += len(node_actions)
+
+        for node in node_actions:
+            actions_count += len(node.get("actions", []))
+
+    return {
+        "actions_file_exists": True,
+        "actions_file_path": output_path,
+        "frames_count": frames_count,
+        "nodes_count": nodes_count,
+        "actions_count": actions_count,
+        "last_execution_result": last_figma_execution_result,
+    }
 
 @app.post("/voice", response_model=VoiceResponse)
 async def ask_by_voice(
@@ -175,6 +333,7 @@ def ask_document(payload: AskRequest):
         overlap=payload.overlap,
         auto_process=payload.auto_process,
         response_mode=payload.response_mode,
+        session_id=payload.session_id,
     )
 
     result["selected_assistant"] = selected_assistant

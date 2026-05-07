@@ -13,6 +13,9 @@ from app.config import (
     DEFAULT_RESPONSE_MODE,
 )
 from app.llm_client import LLMClient
+from app.memory_store import chat_history
+from pathlib import Path
+from app.tools.localization_tool import LocalizationTool
 
 
 class ChatAssistant(BaseAssistant):
@@ -90,6 +93,7 @@ class ChatAssistant(BaseAssistant):
         self,
         question: str,
         filename: str | None = None,
+        session_id: str = "default",
         top_k: int = 3,
         chunk_size: int = 500,
         overlap: int = 100,
@@ -98,21 +102,88 @@ class ChatAssistant(BaseAssistant):
     ) -> dict:
         system_prompt = (
             "You are a helpful local AI coding and general-purpose assistant. "
+            "You MUST use the previous conversation messages as memory. "
+            "If the user asks about information they told you earlier in this session, "
+            "answer from the conversation history. "
+            "Do not confuse your identity with the user's identity. "
             "Answer clearly, practically, and with good structure. "
             "If the user asks for code, provide usable code."
         )
+
+        question_lower = question.lower()
+
+        if any(word in question_lower for word in [
+            "локализация",
+            "локализуй",
+            "figma",
+            "фигма",
+            "plugin actions",
+            "figma actions",
+        ]):
+            tool = LocalizationTool()
+
+            base_dir = Path(__file__).resolve().parents[2]
+
+            xlsx_path = base_dir / "data" / "input" / "March 2026.xlsx"
+            mapping_path = base_dir / "config" / "mapping.json"
+            rules_path = base_dir / "config" / "layout_rules.json"
+            output_path = base_dir / "data" / "output" / "figma_plugin_actions.json"
+
+            result = tool.execute(
+                xlsx_path=str(xlsx_path),
+                mapping_path=str(mapping_path),
+                rules_path=str(rules_path),
+                output_path=str(output_path),
+            )
+
+            data = result.data or {}
+            summary = data.get("summary", {})
+
+            if result.success:
+                answer = (
+                    "Localization tool completed.\n\n"
+                    f"Frames: {summary.get('total_frames')}\n"
+                    f"Nodes: {summary.get('total_nodes')}\n"
+                    f"Actions: {summary.get('total_actions')}\n"
+                    f"Output: {data.get('output_path')}\n\n"
+                    "Figma plugin can now fetch actions from /bridge/figma/actions."
+                )
+            else:
+                answer = (
+                    "Localization tool failed.\n\n"
+                    f"Error: {result.message}\n"
+                    f"Data: {data}"
+                )
+
+            return {
+                "source_document": filename or "",
+                "question": question,
+                "answer": answer,
+                "rag_note_path": "",
+                "top_chunks": [],
+            }
 
         if response_mode == "short":
             system_prompt += " Keep answers concise."
         else:
             system_prompt += " Give a reasonably detailed answer."
 
-        answer = self._get_llm().ask(
-            prompt=question,
+        history = chat_history.to_llm_messages(session_id)
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            *history,
+            {"role": "user", "content": question},
+        ]
+
+        answer = self._get_llm().ask_with_messages(
+            messages=messages,
             model=CHAT_MODEL,
-            system_prompt=system_prompt,
             temperature=0.3,
         )
+
+        chat_history.add_user_message(session_id, question)
+        chat_history.add_assistant_message(session_id, answer)
 
         return {
             "source_document": filename or "",

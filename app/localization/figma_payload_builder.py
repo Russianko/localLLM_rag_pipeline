@@ -1,7 +1,6 @@
 from app.localization.spreadsheet_reader import read_translations
 from app.localization.mapping_loader import load_mapping, get_frames
 from app.localization.rules_loader import load_rules, get_format_rules
-from mapping_loader import get_target
 from app.localization.mapping_loader import load_mapping, get_frames, get_target
 
 

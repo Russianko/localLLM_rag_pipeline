@@ -17,7 +17,11 @@ const assistantSelectEl = document.getElementById("assistantSelect");
 const assistantDescriptionEl = document.getElementById("assistantDescription");
 const voiceBtnEl = document.getElementById("voiceBtn");
 
-
+let sessionId = localStorage.getItem("local_ai_session_id");
+if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem("local_ai_session_id", sessionId);
+}
 let currentAssistant = "auto";
 let assistantsCache = [];
 let isRecording = false;
@@ -52,6 +56,32 @@ function setCurrentDocument(filename) {
     currentFile = filename;
     currentDocumentEl.textContent = filename || "Не выбран";
     renderDocumentsActiveState();
+}
+
+async function resetMemory() {
+    try {
+        const res = await fetch(`/memory/reset?session_id=${encodeURIComponent(sessionId)}`, {
+            method: "POST"
+        });
+
+        const raw = await res.text();
+
+        let data;
+        try {
+            data = JSON.parse(raw);
+        } catch {
+            throw new Error(raw || `HTTP ${res.status}`);
+        }
+
+        if (!res.ok) {
+            throw new Error(data.detail || "Memory reset failed");
+        }
+
+        addMessage("Память текущего диалога очищена.", "system");
+        await loadMemoryStatus();
+    } catch (err) {
+        addMessage(`Ошибка очистки памяти: ${err.message}`, "error");
+    }
 }
 
 function addMessage(text, sender = "assistant") {
@@ -197,6 +227,7 @@ async function startVoiceRecording() {
     formData.append("file", blob, "voice.webm");
     formData.append("filename", currentFile || "");
     formData.append("assistant_type", currentAssistant);
+    formData.append("session_id", sessionId);
 
     const response = await fetch("/voice", {
       method: "POST",
@@ -316,8 +347,47 @@ async function uploadAndProcess(file) {
     }
 }
 
+function isFigmaToolRequest(question) {
+    const text = question.toLowerCase();
+
+    return [
+        "фигма",
+        "figma",
+        "локализация",
+        "локализуй",
+        "plugin actions",
+        "figma actions"
+    ].some(word => text.includes(word));
+}
+
+async function loadFigmaBridgeStatus() {
+    try {
+        const res = await fetch("/bridge/figma/status");
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.detail || "Bridge status failed");
+        }
+
+        addMessage(
+            `Figma bridge: actions=${data.actions_count}, frames=${data.frames_count}, nodes=${data.nodes_count}`,
+            "system"
+        );
+
+        if (data.last_execution_result) {
+            addMessage(
+                `Last Figma execution: ${data.last_execution_result.status}`,
+                "system"
+            );
+        }
+    } catch (err) {
+        addMessage(`Ошибка bridge status: ${err.message}`, "error");
+    }
+}
+
 async function askQuestion(question) {
-    const needsDocument = currentAssistant === "rag";
+    const isToolRequest = isFigmaToolRequest(question);
+    const needsDocument = currentAssistant === "rag" && !isToolRequest;
 
     if (needsDocument && !currentFile) {
         addMessage("Сначала загрузите или выберите документ.", "error");
@@ -341,12 +411,13 @@ async function askQuestion(question) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                filename: currentFile,
+                filename: isToolRequest ? null : currentFile,
                 question: question,
                 top_k: 2,
                 auto_process: true,
                 response_mode: "short",
-                assistant_type: currentAssistant
+                assistant_type: isToolRequest ? "chat" : currentAssistant,
+                session_id: sessionId,
             })
         });
 
@@ -358,6 +429,10 @@ async function askQuestion(question) {
 
         addMessage(data.answer || "Ответ не получен.", "assistant");
 
+        if (isToolRequest) {
+            await loadFigmaBridgeStatus();
+        }
+
         if (data.selected_assistant) {
             const selected = assistantsCache.find(a => a.type === data.selected_assistant);
             const assistantName = selected ? selected.name : data.selected_assistant;
@@ -365,6 +440,7 @@ async function askQuestion(question) {
         }
 
         showSources(data.top_chunks || []);
+        await loadMemoryStatus();
     } catch (err) {
         addMessage(`Ошибка запроса: ${err.message}`, "error");
     } finally {
@@ -411,8 +487,42 @@ messageInputEl.addEventListener("keydown", async (event) => {
 
 refreshDocsBtnEl.addEventListener("click", loadDocuments);
 
+const resetMemoryBtn = document.createElement("button");
+resetMemoryBtn.textContent = "Очистить память";
+resetMemoryBtn.className = "secondary-btn";
+resetMemoryBtn.style.marginTop = "12px";
+resetMemoryBtn.style.width = "100%";
+resetMemoryBtn.addEventListener("click", resetMemory);
+
+const memoryStatusEl = document.createElement("div");
+memoryStatusEl.className = "document-meta";
+memoryStatusEl.style.marginTop = "8px";
+memoryStatusEl.textContent = "Память: неизвестно";
+
+async function loadMemoryStatus() {
+    try {
+        const res = await fetch(`/memory/status?session_id=${encodeURIComponent(sessionId)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.detail || "Memory status failed");
+        }
+
+        memoryStatusEl.textContent = data.has_memory
+            ? `Память: ${data.messages_count}/${data.max_messages}`
+            : "Память: пусто";
+    } catch (err) {
+        memoryStatusEl.textContent = "Память: ошибка";
+    }
+}
+
+documentsListEl.parentNode.insertBefore(resetMemoryBtn, documentsListEl);
+documentsListEl.parentNode.insertBefore(memoryStatusEl, documentsListEl);
+
+
 addMessage("Привет. Можешь просто задать вопрос или загрузить PDF и спросить по документу.", "system");
 loadDocuments();
 setStatus("Ожидание", "idle");
 autoResizeTextarea();
 loadAssistants();
+loadMemoryStatus();

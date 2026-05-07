@@ -1,4 +1,4 @@
-from mapping_loader import get_target
+from app.localization.mapping_loader import get_target
 
 
 def build_node_plugin_actions(node_plan: dict, mapping: dict) -> list[dict]:
